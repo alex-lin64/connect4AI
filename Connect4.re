@@ -161,7 +161,8 @@ checkExpect(
                           [" ", " ", " ", " "], 
                           [" ", " ", " ", " "]], 
              stateStatus: Ongoing(P1)}), 
-             [Move(1), Move(2), Move(3), Move(4)], "legalMoves test 1");
+             [Move(1), Move(2), Move(3), Move(4)], 
+             "legalMoves test 1");
 checkExpect(
   legalMoves({gameBoard: [["X", "O", "X"], 
                           ["O", "X", "O"],
@@ -210,6 +211,21 @@ checkExpect(
         oo: [[1, 3, 5], [2, 4, 6]]
         */
       
+checkExpect(transpose([[1]]), [[1]], "1 row 1 column")
+checkExpect(transpose([[1], [2]]), [[1, 2]], "2 row 1 column")
+checkExpect(transpose([["a", "b"]]), 
+                                   [["a"], ["b"]], 
+                                   "1 row 2 column")
+checkExpect(transpose([[1, 2], [3, 4]]),
+                                  [[1, 3], [2, 4]],
+                                  "2 row 2 column")
+checkExpect(transpose([["o", "p", "q"], 
+                                   ["r", "s", "t"], 
+                                   ["u", "v", "w"]]),
+                                  [["o", "r", "u"], 
+                                   ["p", "s", "v"], 
+                                   ["q", "t", "w"]],
+                                  "3 row 3 column")
       /*
       diagonalLeft: 
       input:  
@@ -258,6 +274,19 @@ checkExpect(
           | _ => failwith("diagonalLeft error")
          };
     };
+
+checkExpect(diagonalLeft([["1", "2", "3"], 
+                          ["1", "2", "3"],
+                          [" ", "2", "3"]]), 
+                        [["1"], ["2", "1"], ["3", "2", " "], ["3", "2"], ["3"]],
+                        "diagonal left: case 1");
+checkExpect(diagonalLeft([["1", "2", "3"]]), 
+                        [["1"], ["2"], ["3"]],
+                        "diagonal left: 1 col");
+checkExpect(diagonalLeft([["1"], ["2"], ["3"]]), 
+                        [["1"], ["2"], ["3"]],
+                        "diagonal left: 1 row");
+
      /* input:  
           gBoard: a list of list of strings that represents the game board
         output:
@@ -267,6 +296,20 @@ checkExpect(
     let diagonalRight: list(list(string)) => list(list(string)) =
       gBoard => 
         diagonalLeft(List.map(List.rev, gBoard))
+
+checkExpect(diagonalRight([["1", "2", "3"], 
+                          ["1", "2", "3"],
+                          [" ", "2", "3"]]), 
+                        List.rev([[" "], ["1", "2"], ["1", "2", "3"], ["2", "3"], ["3"]]),
+                        "diagonal right: case 1");
+checkExpect(diagonalRight([["1", "2", "3"]]), 
+                        [["3"], ["2"], ["1"]],
+                        "diagonalRight: 1 col");
+checkExpect(diagonalRight([["1"], ["2"], ["3"]]), 
+                        [["1"], ["2"], ["3"]],
+                        "diagonalRight: 1 row");
+    
+
     /* input: 
           _ => the current state of the game
        output:
@@ -276,23 +319,28 @@ checkExpect(
             Draw, if neither player has won and there is no legal moves available
             else, Ongoing whichever player's turn it is
        */
-    let rec fourInCol: state => status = cState =>
-        switch(cState.gameBoard) {
-        | [[_, _, _], ...tl] => fourInCol({
-                gameBoard: tl, 
-                stateStatus: cState.stateStatus
-                })
+    let fourInCol: state => status = cState => {
+      let rec fourInColHelper: (state, state) => status = (o, r) =>
+        switch(r.gameBoard) {
         | [[a, b, c, d, ..._], ..._] 
             when ([a, b, c, d] == ["X", "X", "X", "X"]) => Win(P1)
         | [[a, b, c, d, ..._], ..._] 
             when ([a, b, c, d] == ["O", "O", "O", "O"]) => Win(P2)
-        | [[_, b, c, d, ...col1tl], ...tl] => fourInCol({
+        | [[_, b, c, d, ...col1tl], ...tl] => fourInColHelper(o,
+                  {
                 gameBoard: [[b, c, d, ...col1tl], ...tl], 
                 stateStatus: cState.stateStatus
                 })
-        | [_, ... _] when (legalMoves(cState) == []) => Draw
-        | _ => cState.stateStatus
+        | [_, ...tl] => fourInColHelper(o, 
+                {
+                gameBoard: tl, 
+                stateStatus: cState.stateStatus
+                })
+        | [] when (legalMoves(o) == []) => Draw
+        | [] => cState.stateStatus
         };
+      fourInColHelper(cState, cState);
+    }
         /* recursion diagram
             oi: {
               gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "X"]],
@@ -311,6 +359,40 @@ checkExpect(
             oo: Win(P1)
           */
 
+checkExpect(
+  fourInCol({gameBoard:  [[" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "]], 
+             stateStatus: Ongoing(P1)}), 
+             Ongoing(P1), 
+             "fourInCol: Ongoing");
+checkExpect(
+  fourInCol({gameBoard:  [[" ", " ", "X", "O"], 
+                          [" ", "O", "X", "X"], 
+                          [" ", " ", "O", "X"], 
+                          ["X", "O", "X", "O"]], 
+             stateStatus: Ongoing(P2)}), 
+             Ongoing(P2), 
+             "fourInCol: Ongoing");
+checkExpect(
+  fourInCol({gameBoard:  [["O", "O", "O", "O"], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P2), 
+             "fourInCol: O, vertical");
+checkExpect(
+  fourInCol({gameBoard:  [[" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "],
+                          ["X", "X", "X", "X"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P1), 
+             "fourInCol: X, vertical");
+
+
     /* =======================================================================*/
 
     /* returns the status of the game at the given state */
@@ -327,37 +409,142 @@ checkExpect(
       switch(fourInCol(currentState)) {
       | Win(P1) => Win(P1)
       | Win(P2) => Win(P2)
-      | Draw => Draw
       | _ => switch(fourInCol({
               gameBoard: transpose(currentState.gameBoard),
               stateStatus: currentState.stateStatus
               })) {
               | Win(P1) => Win(P1)
               | Win(P2) => Win(P2)
-              | Draw => Draw
               | _ => switch(fourInCol({
                       gameBoard: diagonalLeft(currentState.gameBoard),
                       stateStatus: currentState.stateStatus
                       })) {
                       | Win(P1) => Win(P1)
                       | Win(P2) => Win(P2)
-                      | Draw => Draw
                       | _ => switch(fourInCol({
                               gameBoard: diagonalRight(currentState.gameBoard),
                               stateStatus: currentState.stateStatus
                               })) {
                               | Win(P1) => Win(P1)
                               | Win(P2) => Win(P2)
-                              | Draw => Draw
                               | Ongoing(hd) => 
                                   switch(hd) {
-                                  | P1 => Ongoing(P2)
-                                  | P2 => Ongoing(P1)
-                                  };
+                                  | P1 => Ongoing(P1)
+                                  | P2 => Ongoing(P2)
+                                    };
+                              | _ => Draw
                               }; 
                             };
                           };
                         };
+                        
+checkExpect(
+  gameStatus({gameBoard:  [[" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "]], 
+             stateStatus: Ongoing(P1)}), 
+             Ongoing(P1), 
+             "gameStatus: Ongoing");
+checkExpect(
+  gameStatus({gameBoard:  [[" ", " ", "X", "O"], 
+                          [" ", "O", "X", "X"], 
+                          [" ", " ", "O", "X"], 
+                          ["X", "O", "X", "O"]], 
+             stateStatus: Ongoing(P2)}), 
+             Ongoing(P2), 
+             "gameStatus: Ongoing");
+checkExpect(
+  gameStatus({gameBoard:  [["O", "O", "O", "O"], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P2), 
+             "gameStatus: O, vertical");
+checkExpect(
+  gameStatus({gameBoard:  [[" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "],
+                          ["X", "X", "X", "X"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P1), 
+             "gameStatus: X, vertical");
+
+checkExpect(
+  gameStatus({gameBoard:  [[" ", " ", " ", "X"], 
+                          [" ", " ", " ", "X"], 
+                          [" ", " ", " ", "X"], 
+                          [" ", " ", " ", "X"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P1), 
+             "gameStatus: X, hori");
+checkExpect(
+  gameStatus({gameBoard:  [[" ", " ", " ", "O"], 
+                          [" ", " ", " ", "O"], 
+                          [" ", " ", " ", "O"], 
+                          [" ", " ", " ", "O"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P2), 
+             "gameStatus: O, hori");
+checkExpect(
+  gameStatus({gameBoard:  [[" ", " ", " ", "O"], 
+                          [" ", " ", "O", "X"], 
+                          [" ", "O", " ", "O"], 
+                          ["O", " ", "X", "X"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P2), 
+             "gameStatus: O, diagLeft");
+checkExpect(
+  gameStatus({gameBoard:  [[" ", " ", " ", "X"], 
+                          [" ", " ", "X", "X"], 
+                          [" ", "X", " ", "O"], 
+                          ["X", " ", "X", "X"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P1), 
+             "gameStatus: X, diagLeft");
+checkExpect(
+  gameStatus({gameBoard:  [["X", "O", "O", "O"], 
+                          [" ", "X", "O", "X"], 
+                          [" ", "X", "X", "O"], 
+                          ["O", "X", "X", "X"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P1), 
+             "gameStatus: X, diagRight");
+checkExpect(
+  gameStatus({gameBoard:  [["O", "X", "X", "O"], 
+                          [" ", "O", "O", "X"], 
+                          [" ", "X", "O", "O"], 
+                          ["O", "X", "X", "O"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P2), 
+             "gameStatus: O, diagRight");
+checkExpect(
+  gameStatus({gameBoard:  [["X", "O", "O", "O"], 
+                           [" ", "X", "O", "X"], 
+                           [" ", "X", "X", "O"], 
+                           ["O", "X", "X", "X"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P1), 
+             "gameStatus: X, diagRight");
+checkExpect(
+  gameStatus({gameBoard:  [["X", "O", "O", "O"], 
+                           ["X", "X", "O", "X"], 
+                           ["X", "X", "O", "O"], 
+                           ["O", "X", "X", "X"]], 
+             stateStatus: Ongoing(P1)}), 
+             Draw, 
+             "gameStatus: draw");
+checkExpect(
+  gameStatus({gameBoard:  [["X", "O", "O", "O", "O", "X"], 
+                           ["X", "X", "O", "X", "X", "O"], 
+                           ["X", "X", "O", "O", "X", "X"], 
+                           ["O", "X", "X", "O", "X", "O"],
+                           ["O", "O", "X", "O", "O", "O"]], 
+             stateStatus: Ongoing(P1)}), 
+             Win(P2), 
+             "gameStatus: Big board");
+
 
     /* given a state and a legal move, yields the next state */
     /* input: 
@@ -382,8 +569,8 @@ checkExpect(
         switch(col) {
         | [" "] when (p == P1) => ["X"]
         | [" "] when (p == P2) => ["O"]
-        | [" ", _, ...tl] when (p == P1) => ["X", "X", ...tl]
-        | [" ", _, ...tl] when (p == P2) => ["O", "X", ...tl]
+        | [" ", "X", ...tl] when (p == P1) => ["X", "X", ...tl]
+        | [" ", "X", ...tl] when (p == P2) => ["O", "X", ...tl]
         | [" ", "O", ...tl] when (p == P1) => ["X", "O", ...tl]
         | [" ", "O", ...tl] when (p == P2) => ["O", "O", ...tl]
         | [" ", " ", ...tl] => [" ", ...addPiece([" ", ...tl], p)]
@@ -401,7 +588,7 @@ checkExpect(
             is: cons " " onto ro
             oo: ["X", "X", "X", "X"]
           */
-  
+
     /* input: 
           s: the current state of the game
           n: the column of game board to add a piece
@@ -415,12 +602,13 @@ checkExpect(
             [addPiece(hd, P1), ...tl]
         |([hd, ...tl], Move(1)) when (s.stateStatus == Ongoing(P2)) => 
             [addPiece(hd, P2), ...tl]
-        | ([hd, ...tl], Move(n)) when (s.stateStatus == Ongoing(P1)) => 
-            [hd, ...nextGBoard(
-                {gameBoard: tl, stateStatus: s.stateStatus}, 
-                Move(n-1)
-                )
-              ]
+        | ([hd, ...tl], Move(n)) when 
+            (s.stateStatus == Ongoing(P1)) || (s.stateStatus == Ongoing(P2)) => 
+              [hd, ...nextGBoard(
+                  {gameBoard: tl, stateStatus: s.stateStatus}, 
+                  Move(n-1)
+                  )
+                ]
         | _ => failwith("nextGBoard error")
         };
         /* recursion diagram
@@ -442,17 +630,163 @@ checkExpect(
             is: cons hd of game of game board onto ro, return it
             oo: [["X", "X", "X", "X"], ["O", "O", "O", "X"]]
           */
-    {
-      gameBoard: nextGBoard(cState, move), 
-      stateStatus: gameStatus(
-        {
+      let sStatus = gameStatus({
           gameBoard: nextGBoard(cState, move),
           stateStatus: cState.stateStatus
+          });
+      switch(sStatus) {
+      | Ongoing(p) when (p == P1) =>
+        {
+          gameBoard: nextGBoard(cState, move), 
+          stateStatus: Ongoing(P2)
         }
-      )
-    }
+      | Ongoing(p) when (p == P2) => 
+        {
+          gameBoard: nextGBoard(cState, move), 
+          stateStatus: Ongoing(P1)
+        }
+      | _ => {
+                gameBoard: nextGBoard(cState, move), 
+                stateStatus: sStatus
+              }
+      };
     };
 
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", " ", " ", "O"], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "X", "O", "O"], 
+                  ["X", "O", "X", "X"]], 
+             stateStatus: Ongoing(P1)},
+    Move(1)),
+    {gameBoard:  [[" ", " ", "X", "O"], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "X", "O", "O"], 
+                  ["X", "O", "X", "X"]], 
+             stateStatus: Ongoing(P2)},
+    "nextState: test 1"
+  );
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", " ", " ", "X"], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "X", "O", "O"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Ongoing(P2)},
+    Move(1)),
+    {gameBoard:  [[" ", " ", "O", "X"], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "X", "O", "O"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Ongoing(P1)},
+    "nextState: test 2"
+  );
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", " ", " ", "X"], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "X", "O", "O"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Ongoing(P1)},
+    Move(4)),
+    {gameBoard:  [[" ", " ", " ", "X"], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "X", "O", "O"], 
+                  ["X", "O", "X", "X"]], 
+             stateStatus: Win(P1)},
+    "nextState: test 3"
+  );
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", " ", " ", "X"], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "O", "O", "O"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Ongoing(P2)},
+    Move(3)),
+    {gameBoard:  [[" ", " ", " ", "X"], 
+                  [" ", " ", "X", "X"], 
+                  ["O", "O", "O", "O"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Win(P2)},
+    "nextState: test 4"
+  );
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", " ", " ", " "], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "X", "O", "X"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Ongoing(P1)},
+    Move(1)),
+    {gameBoard:  [[" ", " ", " ", "X"], 
+                  [" ", " ", "X", "X"], 
+                  [" ", "X", "O", "X"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Win(P1)},
+    "nextState: test 5"
+  );
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", " ", " ", " "], 
+                  [" ", " ", "X", "O"], 
+                  [" ", "X", "O", "O"], 
+                  [" ", "O", "X", "O"]], 
+             stateStatus: Ongoing(P2)},
+    Move(1)),
+    {gameBoard:  [[" ", " ", " ", "O"], 
+                  [" ", " ", "X", "O"], 
+                  [" ", "X", "O", "O"], 
+                  [" ", "O", "X", "O"]], 
+             stateStatus: Win(P2)},
+    "nextState: test 6"
+  );
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", "X", "X", "X"], 
+                  [" ", "O", "X", "X"], 
+                  [" ", "X", "O", "X"], 
+                  [" ", "O", "X", "O"]], 
+             stateStatus: Ongoing(P2)},
+    Move(1)),
+    {gameBoard:  [["O", "X", "X", "X"], 
+                  [" ", "O", "X", "X"], 
+                  [" ", "X", "O", "X"], 
+                  [" ", "O", "X", "O"]], 
+             stateStatus: Win(P2)},
+    "nextState: test 6"
+  );
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", "X", "X", "X"], 
+                  [" ", "X", "X", "X"], 
+                  [" ", "X", "X", "X"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Ongoing(P1)},
+    Move(1)),
+    {gameBoard:  [["X", "X", "X", "X"], 
+                  [" ", "X", "X", "X"], 
+                  [" ", "X", "X", "X"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Win(P1)},
+    "nextState: test 7"
+  );
+checkExpect(
+  nextState(
+    {gameBoard:  [[" ", "O", "X", "X"], 
+                  ["O", "O", "X", "X"], 
+                  ["O", "X", "O", "O"], 
+                  ["O", "O", "X", "X"]], 
+             stateStatus: Ongoing(P1)},
+    Move(1)),
+    {gameBoard:  [["X", "O", "X", "X"], 
+                  ["O", "O", "X", "X"], 
+                  ["O", "X", "O", "O"], 
+                  ["O", "O", "X", "X"]], 
+             stateStatus: Draw},
+    "nextState: test 8"
+  );  
 
     /* for transforming human player input into
     internal representation of move */
@@ -463,17 +797,36 @@ checkExpect(
          A move type of the str move if the move is a valid move, otherwise 
          prints an error message
        */
-    let moveOfString: (string, state) => move = (str, s) => {
+    let moveOfString: (string, state) => _ = (str, s) => {
       let validMove = fun
-        | str => 
-          try(string_of_int(int_of_string(str))) {
-          | _ => "Please input a number"
-          }
-      switch(int_of_string(validMove(str))) {
-      | n when (List.mem(Move(n), legalMoves(s))) => Move(n)
-      | _ => failwith("IMPLEMENT")
-      }
-    };
+        | moveStr =>   
+          switch(int_of_string(moveStr)) {
+          | n when (List.mem(Move(n), legalMoves(s)))=> Move(n)
+          | _ => failwith("validMove error")
+          };
+      try(validMove(str)) {
+      | _ => failwith("\nNumerically challenged.  Try again\n")
+        };
+      };
+
+checkExpect(
+  moveOfString(
+    "1", 
+    {gameBoard:  [[" ", " ", " ", "O"], 
+                          [" ", " ", "O", "X"], 
+                          [" ", "O", " ", "O"], 
+                          ["O", " ", "X", "X"]], 
+             stateStatus: Ongoing(P1)}),
+    Move(1),
+    "moveOfString: test 1");
+checkError(()=>moveOfString(
+    "d", 
+    {gameBoard:  [[" ", " ", " ", "O"], 
+                          [" ", " ", "O", "X"], 
+                          [" ", "O", " ", "O"], 
+                          ["O", " ", "X", "X"]], 
+             stateStatus: Ongoing(P1)}),
+    "\nNumerically challenged.  Try again\n");
 
 
     /* estimates the value of a given state (static evaluation) */
@@ -492,13 +845,17 @@ checkExpect(
           | P2 => "Player 2"
           };
 
+checkExpect(stringOfPlayer(P1), "Player 1", "stringOfPlayer: P1");
+checkExpect(stringOfPlayer(P2), "Player 2", "stringOfPlayer: P2");
+
+
         /* input: 
               cState: the current state of the game
            output: 
               the representation of the current game board and a string 
               representing which player's turn it is, or if the game has ended
            */
-        let rec stringOfState: state => string = cState => {
+        let stringOfState: state => string = cState => {
           /* input: 
               alos: a list of string that represents a row in the game board
            output: 
@@ -507,26 +864,30 @@ checkExpect(
           let rec strLstToString: list(string) => string =
             alos =>
               switch (alos) {
-              | [] => " | "
+              | [] => " |"
               | [hd, ...tl] => " | " ++ hd ++ strLstToString(tl)
               };
           let transposedGBoard = transpose(cState.gameBoard)
-          switch(transposedGBoard) {
-          | [] => ""
-          // | [] => switch(cState.stateStatus) {
-          //   | Win(p) => "\n" ++ stringOfPlayer(p) ++ " has won the game!"
-          //   | Draw => 
-          //       "\nThere are no more moves to make.  The game is a draw."
-          //   | Ongoing(p) => 
-          //      "\n" ++ stringOfPlayer(p) ++ " please make a move..."
-          //   };
-          | [hd, ...tl] => 
-              strLstToString(hd) ++ 
-              "\n" ++ 
-              stringOfState(
-                {gameBoard: tl, stateStatus: cState.stateStatus}
-                )
-            };
+          let rec stringOfStateHelper: state => string = cStateTwo =>
+            switch(cStateTwo.gameBoard) {
+            | [] => ""
+            // | [] => switch(cState.stateStatus) {
+            //   | Win(p) => "\n" ++ stringOfPlayer(p) ++ " has won the game!"
+            //   | Draw => 
+            //       "\nThere are no more moves to make.  The game is a draw."
+            //   | Ongoing(p) => 
+            //      "\n" ++ stringOfPlayer(p) ++ " please make a move..."
+            //   };
+            | [hd, ...tl] => 
+                strLstToString(hd) ++ 
+                "\n" ++ 
+                stringOfStateHelper(
+                  {gameBoard: tl, stateStatus: cState.stateStatus}
+                  )
+              };
+            stringOfStateHelper(
+              {gameBoard: transposedGBoard, stateStatus: cState.stateStatus}
+              );
           };
         /* recursion diagram
             oi: {
@@ -537,25 +898,48 @@ checkExpect(
               gameBoard: [[" ", "O", "O", "O"]],
               stateStatus: Ongoing(P1)
               }
-              ro: |  | O | O | O |
+              ro: "|  | O | O | O |"
                   "Player 1 please make a move..."
             is: print out the string representation of hd of oi with a newline
-            oo: |   | X | X | X |
-                |   | O | O | O |
-                "Player 1 please make a move..."
+            oo: "|   | X | X | X |
+                 |   | O | O | O |
+                 Player 1 please make a move..."
             oi: {
               gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "X"]],
               stateStatus: Ongoing(P2)}
               ri: {
               gameBoard: [[" ", "O", "O", "X"]],
               stateStatus: Ongoing(P2)}
-              ro: |  | O | O | X |
-                  "Player 2 please make a move..."
+              ro: "|   | O | O | X |
+                   Player 2 please make a move..."
             is: print out the string representation of hd of oi with a newline
-            oo: |   | X | X | X |
-                |   | O | O | X |
-                "Player 2 please make a move..."
+            oo: "|   | X | X | X |
+                 |   | O | O | X |
+                 Player 2 please make a move..."
           */
+
+checkExpect(stringOfState({
+              gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "O"]],
+              stateStatus: Ongoing(P1)
+              }),
+" |   |   |
+ | X | O |
+ | X | O |
+ | X | O |
+",
+               "stringOfState: test 1");
+checkExpect(stringOfState(
+    {gameBoard:  [[" ", "X", "X", "X"], 
+                  [" ", "X", "X", "X"], 
+                  [" ", "X", "X", "X"], 
+                  [" ", "O", "X", "X"]], 
+             stateStatus: Ongoing(P2)}),
+" |   |   |   |   |
+ | X | X | X | O |
+ | X | X | X | X |
+ | X | X | X | X |
+",
+               "stringOfState: test 2");
 
         /* input: m, a move
            output: a string representation of m, a move
@@ -565,10 +949,53 @@ checkExpect(
           | Move(n) => string_of_int(n)
           }
 
+checkExpect(stringOfMove(Move(1)), "1", "stringOfMove: 1");
+checkExpect(stringOfMove(Move(9)), "9", "stringOfMove: 9");
 
 };
 
 module MyGame : Game = Connect4;
 open Connect4;
 
-/* test cases */
+// /* test cases */
+
+//   /* makeCol */
+//   checkExpect(makeCol(0), [], "makeCol empty list");
+//   checkExpect(makeCol(3), [" ", " ", " "], "makeCol cons list");
+
+//   /* makeGameBoard */
+//   checkExpect(makeGameBoard(3, 0), [], "makeGameBoard test 1");
+//   checkExpect(
+//     makeGameBoard(4, 4), 
+//     [[" ", " ", " ", " "], 
+//     [" ", " ", " ", " "], 
+//     [" ", " ", " ", " "], 
+//     [" ", " ", " ", " "]], 
+//     "makeGameBoard test 2");
+
+//   /* legalMoves */
+//   checkExpect(
+//   legalMoves({gameBoard: [[" ", " ", " ", " "], 
+//                           [" ", " ", " ", " "], 
+//                           [" ", " ", " ", " "], 
+//                           [" ", " ", " ", " "]], 
+//              stateStatus: Ongoing(P1)}), 
+//              [Move(1), Move(2), Move(3), Move(4)], "legalMoves test 1");
+//   checkExpect(
+//     legalMoves({gameBoard: [["X", "O", "X"], 
+//                             ["O", "X", "O"],
+//                             [" ", "X", "O"]], 
+//                 stateStatus: Ongoing(P1)}), 
+//                 [Move(3)], "legalMoves test 2");
+//   checkExpect(
+//     legalMoves({gameBoard: [["X", "O", "X"], 
+//                             ["O", "X", "O"],
+//                             ["O", "X", "O"]], 
+//                 stateStatus: Ongoing(P2)}), 
+//                 [], "legalMoves test 3");
+
+//   /* transpose */
+
+
+//   /* diagonalLeft */
+  
