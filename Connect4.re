@@ -43,7 +43,6 @@ let initialState: string => state =
         makeCol: takes in an integer and produces a column with specified number
         of elements. Each element is a string of " ", and the total number of 
         elements is the number of rows in the gameboard.
-
         input: rowNum, a int that is number of rows
         output: a list of string, that is a column with rowNum number of rows
            */
@@ -65,15 +64,21 @@ let initialState: string => state =
             oo: [" ", " "]
           */
 
-        /* 
-        makeGameBoard: takes in a pair of integers, which is the width and the 
-        height of the gameboard and returns a gameboard with input dimensions
+checkExpect(makeCol(0), [], "makeCol empty list");
+checkExpect(makeCol(3), [" ", " ", " "], "makeCol cons list");
 
+        /* 
+        makeGameBoard: takes in a pair of integers, which is the heigh and the
+        width of the gameboard and returns a list of list, which is a 
+        representation of the gameboard with height as the number of elements in
+        each inner list and width as the total number of inner lists.
         input: 
-            w: int, width of the board
             h: int, height of the board
+            w: int, width of the board 
         output:
-            a initial game board with w columns and h rows
+            a list of list with w inner lists, each of which has h elements. 
+            This is the representation of an initial gameboard with h rows and 
+            w columns.
            */
 
         let rec makeGameBoard: (int, int) => list(list(string)) = (h, w) => 
@@ -87,25 +92,33 @@ let initialState: string => state =
               ro: [[" "]]
             is: cons [" "] onto ro
             oo: [[" "], [" "]]
-
             oi: 2, 1
               ri: 2, 0
               ro: [[]]
             is: cons [" ", " "] onto ro
             oo: [[" ", " "]]
           */
+checkExpect(makeGameBoard(3, 0), [], "makeGameBoard test 1");
+checkExpect(
+  makeGameBoard(4, 4), 
+  [[" ", " ", " ", " "], 
+   [" ", " ", " ", " "], 
+   [" ", " ", " ", " "], 
+   [" ", " ", " ", " "]], 
+  "makeGameBoard test 2");
+
         {
           gameBoard: makeGameBoard(boardWidth, boardHeight),
           stateStatus: Ongoing(P1)
         };
       };
 
-    /* produces the list of legal moves at a state */
-    /* 
-      input: 
-        currentState: current state of the board
-      output:
-        a list of legal moves, where legal move is a column that is not filled 
+    /* legalMoves: produces the list of legal moves at a state 
+       input: 
+         currentState: current state of the gameboard
+       output:
+         a list of legal moves, where legal move is a column that is not filled 
+         in the gameboard
       */
     let legalMoves: state => list(move) = currentState => {
       let rec legalMovesHelper: (state, int) => list(move) = (cState, col) =>
@@ -133,7 +146,6 @@ let initialState: string => state =
               ro: [Move(2)]
             is: cons Move(1) onto ro since col 1 is legal move
             oo: [Move(1), Move(2)]
-
             oi: {gameBoard: [["X", "X"], [" ", "O"]]}, 1
               ri: [[" ", "O"]], 2
               ro: [Move(2)]
@@ -143,12 +155,38 @@ let initialState: string => state =
     legalMovesHelper(currentState, 1)
     };
 
+checkExpect(
+  legalMoves({gameBoard: [[" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "]], 
+             stateStatus: Ongoing(P1)}), 
+             [Move(1), Move(2), Move(3), Move(4)], "legalMoves test 1");
+checkExpect(
+  legalMoves({gameBoard: [["X", "O", "X"], 
+                          ["O", "X", "O"],
+                          [" ", "X", "O"]], 
+               stateStatus: Ongoing(P1)}), 
+               [Move(3)], "legalMoves test 2");
+checkExpect(
+  legalMoves({gameBoard: [["X", "O", "X"], 
+                          ["O", "X", "O"],
+                          ["O", "X", "O"]], 
+               stateStatus: Ongoing(P2)}), 
+               [], "legalMoves test 3");
+
     /* ====================== Game Status Helpers ============================*/
     /*
+    Data definition: matrix
+    A matrix is a list of lists. The total number of inner lists is the height,
+    and the number of elements in each inner list is the width of the matrix.
+    
+    transpose: convert a matrix into a new matrix, in which the rows and columns
+    are switched
     input:
-      mat: a matrix('a) data type
+      a list of list of 'a, which represents a matrix 
     output:
-      a matrix reflected across its main diagonal
+      a list of list of 'a, which is a matrix reflected across its main diagonal
       */
     let rec transpose: list(list('a)) => list(list('a)) =
       mat =>
@@ -171,7 +209,10 @@ let initialState: string => state =
         is: create list from first of every row,, cons onto ro
         oo: [[1, 3, 5], [2, 4, 6]]
         */
-      /*input:  
+      
+      /*
+      diagonalLeft: 
+      input:  
           gBoard: a list of list of strings that represents the game board
         output:
           a new list of list of strings that represents all the diagonals from
@@ -204,7 +245,6 @@ let initialState: string => state =
               ro: [["O, "X"], ["X"]]
             is: cons [" ", " "] of input onto ro
             oo: [[" ", " "], ["O, "X"], ["X"]]
-
             oi: [" "], [[" ", "X"]]
               ri: [], [["X"]]
               ro: [["X"]]
@@ -262,7 +302,6 @@ let initialState: string => state =
               ro: Ongoing(P1)
             is: return ro, since neither player has won, and is not a draw
             oo: Ongoing(P1)
-
             oi: {
               gameBoard: [["X", "X", "X", "X"], ["O", "O", "O", "X"]],
               stateStatus: Ongoing(P2)}
@@ -356,7 +395,6 @@ let initialState: string => state =
               ro: n/a
             is: replace " " with "X", since base case
             oo: ["X", "X", "X", "X"]
-
             oi: [" ", " ", "X", "X"]
               ri: [" ", "X", "X"]
               ro: ["X", "X", "X"]
@@ -394,7 +432,6 @@ let initialState: string => state =
               ro: n/a
             is: base case, addPiece to first col
             oo: [["X", "X", "X", "X"], [" ", "O", "O", "O"]]
-
             oi: {
               gameBoard: [["X", "X", "X", "X"], [" ", "O", "O", "X"]],
               stateStatus: Ongoing(P2)}, Move(2)
@@ -501,14 +538,11 @@ let initialState: string => state =
               stateStatus: Ongoing(P1)
               }
               ro: |  | O | O | O |
-
                   "Player 1 please make a move..."
             is: print out the string representation of hd of oi with a newline
             oo: |   | X | X | X |
                 |   | O | O | O |
-
                 "Player 1 please make a move..."
-
             oi: {
               gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "X"]],
               stateStatus: Ongoing(P2)}
@@ -516,12 +550,10 @@ let initialState: string => state =
               gameBoard: [[" ", "O", "O", "X"]],
               stateStatus: Ongoing(P2)}
               ro: |  | O | O | X |
-
                   "Player 2 please make a move..."
             is: print out the string representation of hd of oi with a newline
             oo: |   | X | X | X |
                 |   | O | O | X |
-
                 "Player 2 please make a move..."
           */
 
