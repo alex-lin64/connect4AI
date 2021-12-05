@@ -14,7 +14,15 @@ module AIPlayer = (MyGame: Game) => {
              the AI player to win
      */
   let nextMove: (PlayerGame.state => PlayerGame.move) = s => {
-    failwith("not yet implemented")
+    let pMovesRanked: PlayerGame.state => list(PlayerGame.move) = pState => {
+      let lom = PlayerGame.legalMoves(pState)
+      let loPosStates = List.map()
+
+
+    }
+
+
+    
   }
   
   /* put your team name here! */
