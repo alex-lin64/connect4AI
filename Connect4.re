@@ -64,9 +64,6 @@ let initialState: string => state =
             oo: [" ", " "]
           */
 
-checkExpect(makeCol(0), [], "makeCol empty list");
-checkExpect(makeCol(3), [" ", " ", " "], "makeCol cons list");
-
         /* 
         makeGameBoard: takes in a pair of integers, which is the heigh and the
         width of the gameboard and returns a list of list, which is a 
@@ -98,15 +95,6 @@ checkExpect(makeCol(3), [" ", " ", " "], "makeCol cons list");
             is: cons [" ", " "] onto ro
             oo: [[" ", " "]]
           */
-checkExpect(makeGameBoard(3, 0), [], "makeGameBoard test 1");
-checkExpect(
-  makeGameBoard(4, 4), 
-  [[" ", " ", " ", " "], 
-   [" ", " ", " ", " "], 
-   [" ", " ", " ", " "], 
-   [" ", " ", " ", " "]], 
-  "makeGameBoard test 2");
-
         {
           gameBoard: makeGameBoard(boardWidth, boardHeight),
           stateStatus: Ongoing(P1)
@@ -155,27 +143,6 @@ checkExpect(
     legalMovesHelper(currentState, 1)
     };
 
-checkExpect(
-  legalMoves({gameBoard: [[" ", " ", " ", " "], 
-                          [" ", " ", " ", " "], 
-                          [" ", " ", " ", " "], 
-                          [" ", " ", " ", " "]], 
-             stateStatus: Ongoing(P1)}), 
-             [Move(1), Move(2), Move(3), Move(4)], 
-             "legalMoves test 1");
-checkExpect(
-  legalMoves({gameBoard: [["X", "O", "X"], 
-                          ["O", "X", "O"],
-                          [" ", "X", "O"]], 
-               stateStatus: Ongoing(P1)}), 
-               [Move(3)], "legalMoves test 2");
-checkExpect(
-  legalMoves({gameBoard: [["X", "O", "X"], 
-                          ["O", "X", "O"],
-                          ["O", "X", "O"]], 
-               stateStatus: Ongoing(P2)}), 
-               [], "legalMoves test 3");
-
     /* ====================== Game Status Helpers ============================*/
     /*
     Data definition: matrix
@@ -211,41 +178,23 @@ checkExpect(
         oo: [[1, 3, 5], [2, 4, 6]]
         */
       
-checkExpect(transpose([[1]]), [[1]], "transpose 1 row 1 column")
-checkExpect(transpose([[1], [2]]), [[1, 2]], "transpose 2 row 1 column")
-checkExpect(transpose([["a", "b"]]), 
-                                   [["a"], ["b"]], 
-                                   "transpose 1 row 2 column")
-checkExpect(transpose([[1, 2], [3, 4]]),
-                                  [[1, 3], [2, 4]],
-                                  "transpose 2 row 2 column")
-checkExpect(transpose([["o", "p", "q"], 
-                                   ["r", "s", "t"], 
-                                   ["u", "v", "w"]]),
-                                  [["o", "r", "u"], 
-                                   ["p", "s", "v"], 
-                                   ["q", "t", "w"]],
-                                  "transpose 3 row 3 column")
       /*
-      diagonalLeft: takes in a matrix and creates a new matrix in which each 
-      inner list is indented so that the matrix has a parallelogram shape, in 
-      order to get a list of diagonals in the original matrix. 
+      diagonalLeft: 
       input:  
           gBoard: a list of list of strings that represents the game board
         output:
           a new list of list of strings that represents all the diagonals from
-          upper right to lower left of gBoard
+          right to left of gBoard
         */
 
       let rec diagonalLeft: list(list(string)) => list(list(string)) = 
         gBoard => {
-          /* diagonalHelper: cons every item of a list to the every list in
-             the list of lists, creating a new list of lists.
+          /* input:  
               input: a list of string that represents the first column in a 
                      game board
-              ro: a list of lists that represents the recursive output of 
-                  diagonalLeft. Every list in ro is being consed upon by every
-                  element in input.
+              ro: a list of list of string of length 1, that represents the 
+                  recursive output of diagonalHelper, always 1 element longer 
+                  than ro
             output:
               a list of list of strings that pairs the first of input with first
               of ro, up until the last element of ro, which is its own string 
@@ -278,21 +227,7 @@ checkExpect(transpose([["o", "p", "q"],
          };
     };
 
-checkExpect(diagonalLeft([["1", "2", "3"], 
-                          ["1", "2", "3"],
-                          [" ", "2", "3"]]), 
-                        [["1"], ["2", "1"], ["3", "2", " "], ["3", "2"], ["3"]],
-                        "diagonal left: case 1");
-checkExpect(diagonalLeft([["1", "2", "3"]]), 
-                        [["1"], ["2"], ["3"]],
-                        "diagonal left: 1 col");
-checkExpect(diagonalLeft([["1"], ["2"], ["3"]]), 
-                        [["1"], ["2"], ["3"]],
-                        "diagonal left: 1 row");
-
-     /* diagonalRight: creates a list of lists that represents the upper left
-        to lower right diagonals of a matrix.
-        input:  
+     /* input:  
           gBoard: a list of list of strings that represents the game board
         output:
           a new list of list of strings that represents all the diagonals from
@@ -302,46 +237,16 @@ checkExpect(diagonalLeft([["1"], ["2"], ["3"]]),
       gBoard => 
         diagonalLeft(List.map(List.rev, gBoard))
 
-checkExpect(diagonalRight([["1", "2", "3"], 
-                          ["1", "2", "3"],
-                          [" ", "2", "3"]]), 
-                          List.rev(
-                            [[" "], 
-                             ["1", "2"], 
-                             ["1", "2", "3"], 
-                             ["2", "3"], 
-                             ["3"]]),
-                        "diagonal right: case 1");
-checkExpect(diagonalRight([["1", "2", "3"]]), 
-                        [["3"], ["2"], ["1"]],
-                        "diagonalRight: 1 col");
-checkExpect(diagonalRight([["1"], ["2"], ["3"]]), 
-                        [["1"], ["2"], ["3"]],
-                        "diagonalRight: 1 row");
-    
-
-    /* fourInCol: check whether a list has 4 "X" or "O" consecutively and return
-       the current status of the game. 
-       input: 
-          cState: the current state of the game
+    /* input: 
+          _ => the current state of the game
        output:
           the status of the game
-          - Win if either P1 or P2 has 4 of their pieces in a row
-          - Draw, if neither player has won and there is no legal moves 
-            available
-          - else, Ongoing whichever player's turn it is
+            the status of the game
+            Win if either P1 or P2 has 4 of their pieces in a row
+            Draw, if neither player has won and there is no legal moves available
+            else, Ongoing whichever player's turn it is
        */
     let fourInCol: state => status = cState => {
-
-    /* fourInColHelper: takes in two cState, one for carrying over and the other
-       for recursion, producing the status of the game at cState.
-        input: 
-          o, the original cState that is carried over
-          r, the cState in which gameboard is carried over in each recursion
-        output: 
-          the status of the game in cState
-    */
-
       let rec fourInColHelper: (state, state) => status = (o, r) =>
         switch(r.gameBoard) {
         | [[a, b, c, d, ..._], ..._] 
@@ -349,7 +254,7 @@ checkExpect(diagonalRight([["1"], ["2"], ["3"]]),
         | [[a, b, c, d, ..._], ..._] 
             when ([a, b, c, d] == ["O", "O", "O", "O"]) => Win(P2)
         | [[_, b, c, d, ...col1tl], ...tl] => fourInColHelper(o,
-                {
+                  {
                 gameBoard: [[b, c, d, ...col1tl], ...tl], 
                 stateStatus: cState.stateStatus
                 })
@@ -381,44 +286,10 @@ checkExpect(diagonalRight([["1"], ["2"], ["3"]]),
             oo: Win(P1)
           */
 
-checkExpect(
-  fourInCol({gameBoard:  [[" ", " ", " ", " "], 
-                          [" ", " ", " ", " "], 
-                          [" ", " ", " ", " "], 
-                          [" ", " ", " ", " "]], 
-             stateStatus: Ongoing(P1)}), 
-             Ongoing(P1), 
-             "fourInCol: Ongoing");
-checkExpect(
-  fourInCol({gameBoard:  [[" ", " ", "X", "O"], 
-                          [" ", "O", "X", "X"], 
-                          [" ", " ", "O", "X"], 
-                          ["X", "O", "X", "O"]], 
-             stateStatus: Ongoing(P2)}), 
-             Ongoing(P2), 
-             "fourInCol: Ongoing");
-checkExpect(
-  fourInCol({gameBoard:  [["O", "O", "O", "O"], 
-                          [" ", " ", " ", " "], 
-                          [" ", " ", " ", " "], 
-                          [" ", " ", " ", " "]], 
-             stateStatus: Ongoing(P1)}), 
-             Win(P2), 
-             "fourInCol: O, vertical");
-checkExpect(
-  fourInCol({gameBoard:  [[" ", " ", " ", " "], 
-                          [" ", " ", " ", " "], 
-                          [" ", " ", " ", " "],
-                          ["X", "X", "X", "X"]], 
-             stateStatus: Ongoing(P1)}), 
-             Win(P1), 
-             "fourInCol: X, vertical");
-
-
     /* =======================================================================*/
 
-    /* gameStatus: returns the status of the game at the given state upon
-      examining 4 "X" or "O" in a row, a column, or diagonals of the gameboard. 
+    /* returns the status of the game at the given state */
+    /* 
       input: 
         currentState: current state of the game, including gameBoard and status
       output:
@@ -449,18 +320,359 @@ checkExpect(
                               })) {
                               | Win(P1) => Win(P1)
                               | Win(P2) => Win(P2)
-                              | Draw => Draw
-                              | Ongoing(x) => 
-                                  switch(x) {
+                              | Ongoing(hd) => 
+                                  switch(hd) {
                                   | P1 => Ongoing(P1)
                                   | P2 => Ongoing(P2)
-                                  };
+                                    };
+                              | _ => Draw
                               }; 
+                            };
                           };
-                      };
-                  };
+                        };
                         
-checkExpect(
+    /* given a state and a legal move, yields the next state */
+    /* input: 
+         cState: current state of the game
+         move: a num representing a legal move
+       output:
+         a new game state with the next game board after move is made, and the 
+         new state of the game, whether it's a draw, win, or ongoing 
+       */
+  let nextState: (state, move) => state =
+    (cState, move) => {
+      /* input: 
+          col: a list of string that represents a column in gameboard to add a  
+               piece
+          p: whichPlayer, represents if it's P1 or P2's turn
+       output:
+          a new list of string that is a column of game board with the correct
+          piece added
+       */
+    let rec addPiece: (list(string), whichPlayer) => list(string) = 
+      (col, p) =>
+        switch(col) {
+        | [" "] when (p == P1) => ["X"]
+        | [" "] when (p == P2) => ["O"]
+        | [" ", "X", ...tl] when (p == P1) => ["X", "X", ...tl]
+        | [" ", "X", ...tl] when (p == P2) => ["O", "X", ...tl]
+        | [" ", "O", ...tl] when (p == P1) => ["X", "O", ...tl]
+        | [" ", "O", ...tl] when (p == P2) => ["O", "O", ...tl]
+        | [" ", " ", ...tl] => [" ", ...addPiece([" ", ...tl], p)]
+        | _ => failwith("addPiece error")
+        };
+        /* recursion diagram
+            oi: [" ", "X", "X", "X"], P1
+              ri: n/a
+              ro: n/a
+            is: replace " " with "X", since base case
+            oo: ["X", "X", "X", "X"]
+            oi: [" ", " ", "X", "X"]
+              ri: [" ", "X", "X"]
+              ro: ["X", "X", "X"]
+            is: cons " " onto ro
+            oo: ["X", "X", "X", "X"]
+          */
+
+    /* input: 
+          s: the current state of the game
+          n: the column of game board to add a piece
+       output:
+          a new game board with the correct piece added in correct column
+       */
+    let rec nextGBoard: (state, move) => list(list(string)) = 
+      (s, n) =>
+        switch(s.gameBoard, n) {
+        | ([hd, ...tl], Move(1)) when (s.stateStatus == Ongoing(P1)) => 
+            [addPiece(hd, P1), ...tl]
+        |([hd, ...tl], Move(1)) when (s.stateStatus == Ongoing(P2)) => 
+            [addPiece(hd, P2), ...tl]
+        | ([hd, ...tl], Move(n)) when 
+            (s.stateStatus == Ongoing(P1)) || (s.stateStatus == Ongoing(P2)) => 
+              [hd, ...nextGBoard(
+                  {gameBoard: tl, stateStatus: s.stateStatus}, 
+                  Move(n-1)
+                  )
+                ]
+        | _ => failwith("nextGBoard error")
+        };
+        /* recursion diagram
+            oi: {
+              gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "O"]],
+              stateStatus: Ongoing(P1)
+              }, Move(1)
+              ri: n/a
+              ro: n/a
+            is: base case, addPiece to first col
+            oo: [["X", "X", "X", "X"], [" ", "O", "O", "O"]]
+            oi: {
+              gameBoard: [["X", "X", "X", "X"], [" ", "O", "O", "X"]],
+              stateStatus: Ongoing(P2)}, Move(2)
+              ri: {
+              gameBoard: [[" ", "O", "O", "X"]],
+              stateStatus: Ongoing(P2)}, Move(1)
+              ro: [["O", "O", "O", "X"]]
+            is: cons hd of game of game board onto ro, return it
+            oo: [["X", "X", "X", "X"], ["O", "O", "O", "X"]]
+          */
+      let sStatus = gameStatus({
+          gameBoard: nextGBoard(cState, move),
+          stateStatus: cState.stateStatus
+          });
+      switch(sStatus) {
+      | Ongoing(p) when (p == P1) =>
+        {
+          gameBoard: nextGBoard(cState, move), 
+          stateStatus: Ongoing(P2)
+        }
+      | Ongoing(p) when (p == P2) => 
+        {
+          gameBoard: nextGBoard(cState, move), 
+          stateStatus: Ongoing(P1)
+        }
+      | _ => {
+                gameBoard: nextGBoard(cState, move), 
+                stateStatus: sStatus
+              }
+      };
+    };
+
+    /* for transforming human player input into
+    internal representation of move */
+    /* input:
+         str: a string that is the user input for a move
+         s: the current state of the game
+       output:
+         A move type of the str move if the move is a valid move, otherwise 
+         prints an error message
+       */
+    let moveOfString: (string, state) => _ = (str, s) => {
+      let validMove = fun
+        | moveStr =>   
+          switch(int_of_string(moveStr)) {
+          | n when (List.mem(Move(n), legalMoves(s)))=> Move(n)
+          | _ => failwith("validMove error")
+          };
+      try(validMove(str)) {
+      | _ => failwith("\nNumerically challenged.  Try again\n")
+        };
+      };
+
+    /* estimates the value of a given state (static evaluation) */
+    let estimateValue: state => float = cState => failwith("Not implemented");
+
+
+
+    /* printing functions; converts a whichPlayer type, a state type, or a move
+       type into a string */
+        /* input: whichplayer: a player
+           output: a string that represents the player
+           */
+        let stringOfPlayer: whichPlayer => string = p =>
+          switch(p) {
+          | P1 => "Player 1"
+          | P2 => "Player 2"
+          };
+
+        /* input: 
+              cState: the current state of the game
+           output: 
+              the representation of the current game board and a string 
+              representing which player's turn it is, or if the game has ended
+           */
+        let stringOfState: state => string = cState => {
+          /* input: 
+              alos: a list of string that represents a row in the game board
+           output: 
+              the string representation of a single row in the game board 
+           */
+          let rec strLstToString: list(string) => string =
+            alos =>
+              switch (alos) {
+              | [] => " |"
+              | [hd, ...tl] => " | " ++ hd ++ strLstToString(tl)
+              };
+          let transposedGBoard = transpose(cState.gameBoard)
+          let rec stringOfStateHelper: state => string = cStateTwo =>
+            switch(cStateTwo.gameBoard) {
+            | [] => ""
+            // | [] => switch(cState.stateStatus) {
+            //   | Win(p) => "\n" ++ stringOfPlayer(p) ++ " has won the game!"
+            //   | Draw => 
+            //       "\nThere are no more moves to make.  The game is a draw."
+            //   | Ongoing(p) => 
+            //      "\n" ++ stringOfPlayer(p) ++ " please make a move..."
+            //   };
+            | [hd, ...tl] => 
+                strLstToString(hd) ++ 
+                "\n" ++ 
+                stringOfStateHelper(
+                  {gameBoard: tl, stateStatus: cState.stateStatus}
+                  )
+              };
+            stringOfStateHelper(
+              {gameBoard: transposedGBoard, stateStatus: cState.stateStatus}
+              );
+          };
+        /* recursion diagram
+            oi: {
+              gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "O"]],
+              stateStatus: Ongoing(P1)
+              }
+              ri: {
+              gameBoard: [[" ", "O", "O", "O"]],
+              stateStatus: Ongoing(P1)
+              }
+              ro: "|  | O | O | O |"
+                  "Player 1 please make a move..."
+            is: print out the string representation of hd of oi with a newline
+            oo: "|   | X | X | X |
+                 |   | O | O | O |
+                 Player 1 please make a move..."
+            oi: {
+              gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "X"]],
+              stateStatus: Ongoing(P2)}
+              ri: {
+              gameBoard: [[" ", "O", "O", "X"]],
+              stateStatus: Ongoing(P2)}
+              ro: "|   | O | O | X |
+                   Player 2 please make a move..."
+            is: print out the string representation of hd of oi with a newline
+            oo: "|   | X | X | X |
+                 |   | O | O | X |
+                 Player 2 please make a move..."
+          */
+
+
+
+        /* input: m, a move
+           output: a string representation of m, a move
+           */
+        let stringOfMove: move => string = m =>
+          switch(m) {
+          | Move(n) => string_of_int(n)
+          };
+  };
+
+module MyGame : Game = Connect4;
+open Connect4;
+
+/* test cases */
+
+  // /* makeCol */
+  // checkExpect(makeCol(0), [], "makeCol empty list");
+  // checkExpect(makeCol(3), [" ", " ", " "], "makeCol cons list");
+
+  // /* makeGameBoard */
+  // checkExpect(makeGameBoard(3, 0), [], "makeGameBoard test 1");
+  // checkExpect(
+  //   makeGameBoard(4, 4), 
+  //   [[" ", " ", " ", " "], 
+  //   [" ", " ", " ", " "], 
+  //   [" ", " ", " ", " "], 
+  //   [" ", " ", " ", " "]], 
+  //   "makeGameBoard test 2");
+
+  /* legalMoves */
+  checkExpect(
+  legalMoves({gameBoard: [[" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "], 
+                          [" ", " ", " ", " "]], 
+             stateStatus: Ongoing(P1)}), 
+             [Move(1), Move(2), Move(3), Move(4)], "legalMoves test 1");
+  checkExpect(
+    legalMoves({gameBoard: [["X", "O", "X"], 
+                            ["O", "X", "O"],
+                            [" ", "X", "O"]], 
+                stateStatus: Ongoing(P1)}), 
+                [Move(3)], "legalMoves test 2");
+  checkExpect(
+    legalMoves({gameBoard: [["X", "O", "X"], 
+                            ["O", "X", "O"],
+                            ["O", "X", "O"]], 
+                stateStatus: Ongoing(P2)}), 
+                [], "legalMoves test 3");
+
+  /* transpose */
+  checkExpect(transpose([[1]]), [[1]], "1 row 1 column")
+  checkExpect(transpose([[1], [2]]), [[1, 2]], "2 row 1 column")
+  checkExpect(transpose([["a", "b"]]), 
+                                    [["a"], ["b"]], 
+                                    "1 row 2 column")
+  checkExpect(transpose([[1, 2], [3, 4]]),
+                                    [[1, 3], [2, 4]],
+                                    "2 row 2 column")
+  checkExpect(transpose([["o", "p", "q"], 
+                                    ["r", "s", "t"], 
+                                    ["u", "v", "w"]]),
+                                    [["o", "r", "u"], 
+                                    ["p", "s", "v"], 
+                                    ["q", "t", "w"]],
+                                    "3 row 3 column")
+
+  /* diagonalLeft */
+  checkExpect(diagonalLeft([["1", "2", "3"], 
+                            ["1", "2", "3"],
+                            [" ", "2", "3"]]), 
+                          [["1"], ["2", "1"], ["3", "2", " "], ["3", "2"], ["3"]],
+                          "diagonal left: case 1");
+  checkExpect(diagonalLeft([["1", "2", "3"]]), 
+                          [["1"], ["2"], ["3"]],
+                          "diagonal left: 1 col");
+  checkExpect(diagonalLeft([["1"], ["2"], ["3"]]), 
+                          [["1"], ["2"], ["3"]],
+                          "diagonal left: 1 row");
+
+  /* diagonalRight */
+  checkExpect(diagonalRight([["1", "2", "3"], 
+                            ["1", "2", "3"],
+                            [" ", "2", "3"]]), 
+                          List.rev([[" "], ["1", "2"], ["1", "2", "3"], ["2", "3"], ["3"]]),
+                          "diagonal right: case 1");
+  checkExpect(diagonalRight([["1", "2", "3"]]), 
+                          [["3"], ["2"], ["1"]],
+                          "diagonalRight: 1 col");
+  checkExpect(diagonalRight([["1"], ["2"], ["3"]]), 
+                          [["1"], ["2"], ["3"]],
+                          "diagonalRight: 1 row");
+
+  /* fourInCol */
+  checkExpect(
+    fourInCol({gameBoard:  [[" ", " ", " ", " "], 
+                            [" ", " ", " ", " "], 
+                            [" ", " ", " ", " "], 
+                            [" ", " ", " ", " "]], 
+              stateStatus: Ongoing(P1)}), 
+              Ongoing(P1), 
+              "fourInCol: Ongoing");
+  checkExpect(
+    fourInCol({gameBoard:  [[" ", " ", "X", "O"], 
+                            [" ", "O", "X", "X"], 
+                            [" ", " ", "O", "X"], 
+                            ["X", "O", "X", "O"]], 
+              stateStatus: Ongoing(P2)}), 
+              Ongoing(P2), 
+              "fourInCol: Ongoing");
+  checkExpect(
+    fourInCol({gameBoard:  [["O", "O", "O", "O"], 
+                            [" ", " ", " ", " "], 
+                            [" ", " ", " ", " "], 
+                            [" ", " ", " ", " "]], 
+              stateStatus: Ongoing(P1)}), 
+              Win(P2), 
+              "fourInCol: O, vertical");
+  checkExpect(
+    fourInCol({gameBoard:  [[" ", " ", " ", " "], 
+                            [" ", " ", " ", " "], 
+                            [" ", " ", " ", " "],
+                            ["X", "X", "X", "X"]], 
+              stateStatus: Ongoing(P1)}), 
+              Win(P1), 
+              "fourInCol: X, vertical"); 
+
+  /* gameStatus */
+  checkExpect(
   gameStatus({gameBoard:  [[" ", " ", " ", " "], 
                           [" ", " ", " ", " "], 
                           [" ", " ", " ", " "], 
@@ -566,120 +778,9 @@ checkExpect(
              stateStatus: Ongoing(P1)}), 
              Win(P2), 
              "gameStatus: Big board");
-
-
-    /* nextState: given a state and a legal move, yields the next state */
-    /* input: 
-         cState: current state of the game
-         move: a num representing a legal move
-       output:
-         a new game state with the next game board after move is made, and the 
-         new state of the game, whether it's a draw, win, or ongoing 
-       */
-  let nextState: (state, move) => state =
-    (cState, move) => {
-      /* addPiece: add a piece on a column indicated by the current player
-         input: 
-          col: a list of string that represents a column in gameboard to add a  
-               piece
-          p: whichPlayer, represents if it's P1 or P2's turn
-         output:
-          a new list of string that is a column of game board with the correct
-          piece added
-       */
-    let rec addPiece: (list(string), whichPlayer) => list(string) = 
-      (col, p) =>
-        switch(col) {
-        | [" "] when (p == P1) => ["X"]
-        | [" "] when (p == P2) => ["O"]
-        | [" ", "X", ...tl] when (p == P1) => ["X", "X", ...tl]
-        | [" ", "X", ...tl] when (p == P2) => ["O", "X", ...tl]
-        | [" ", "O", ...tl] when (p == P1) => ["X", "O", ...tl]
-        | [" ", "O", ...tl] when (p == P2) => ["O", "O", ...tl]
-        | [" ", " ", ...tl] => [" ", ...addPiece([" ", ...tl], p)]
-        | _ => failwith("addPiece error")
-        };
-        /* recursion diagram
-            oi: [" ", "X", "X", "X"], P1
-              ri: n/a
-              ro: n/a
-            is: replace " " with "X", since base case
-            oo: ["X", "X", "X", "X"]
-            oi: [" ", " ", "X", "X"]
-              ri: [" ", "X", "X"]
-              ro: ["X", "X", "X"]
-            is: cons " " onto ro
-            oo: ["X", "X", "X", "X"]
-          */
-
-    /* nextGBoard: gives a new game board given the current state and the move
-       the player chooses to make.  
-       input: 
-          s: the current state of the game
-          n: the column of game board to add a piece
-       output:
-          a new game board with the correct piece added in correct column
-       */
-    let rec nextGBoard: (state, move) => list(list(string)) = 
-      (s, n) =>
-        switch(s.gameBoard, n) {
-        | ([hd, ...tl], Move(1)) when (s.stateStatus == Ongoing(P1)) => 
-            [addPiece(hd, P1), ...tl]
-        | ([hd, ...tl], Move(1)) when (s.stateStatus == Ongoing(P2)) => 
-            [addPiece(hd, P2), ...tl]
-        | ([hd, ...tl], Move(n)) => 
-              [hd, ...nextGBoard(
-                  {gameBoard: tl, stateStatus: s.stateStatus}, 
-                  Move(n-1)
-                  )
-                ]
-        | _ => failwith("nextGBoard error")
-        };
-        /* recursion diagram
-            oi: {
-              gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "O"]],
-              stateStatus: Ongoing(P1)
-              }, Move(1)
-              ri: n/a
-              ro: n/a
-            is: base case, addPiece to first col
-            oo: [["X", "X", "X", "X"], [" ", "O", "O", "O"]]
-            oi: {
-              gameBoard: [["X", "X", "X", "X"], [" ", "O", "O", "X"]],
-              stateStatus: Ongoing(P2)}, Move(2)
-              ri: {
-              gameBoard: [[" ", "O", "O", "X"]],
-              stateStatus: Ongoing(P2)}, Move(1)
-              ro: [["O", "O", "O", "X"]]
-            is: cons hd of game of game board onto ro, return it
-            oo: [["X", "X", "X", "X"], ["O", "O", "O", "X"]]
-          */
-      let sStatus = gameStatus({
-          gameBoard: nextGBoard(cState, move),
-          stateStatus: cState.stateStatus
-          });
-        /* sStatus: the status of the game, being switched in order to change
-           player
-         */
-      switch(sStatus) {
-      | Ongoing(p) when (p == P1) =>
-        {
-          gameBoard: nextGBoard(cState, move), 
-          stateStatus: Ongoing(P2)
-        }
-      | Ongoing(p) when (p == P2) => 
-        {
-          gameBoard: nextGBoard(cState, move), 
-          stateStatus: Ongoing(P1)
-        }
-      | _ => {
-                gameBoard: nextGBoard(cState, move), 
-                stateStatus: sStatus
-              }
-      };
-    };
-
-checkExpect(
+  
+  /* nextState */
+  checkExpect(
   nextState(
     {gameBoard:  [[" ", " ", " ", "O"], 
                   [" ", " ", "X", "X"], 
@@ -815,28 +916,8 @@ checkExpect(
     "nextState: test 8"
   );  
 
-    /* moveOfString: transforms human player input into
-    internal representation of move */
-    /* input:
-         str: a string that is the user input for a move
-         s: the current state of the game
-       output:
-         A move type of the str move if the move is a valid move, otherwise 
-         prints an error message
-       */
-    let moveOfString: (string, state) => _ = (str, s) => {
-      let validMove = fun
-        | moveStr =>   
-          switch(int_of_string(moveStr)) {
-          | n when (List.mem(Move(n), legalMoves(s)))=> Move(n)
-          | _ => failwith("validMove error")
-          };
-      try(validMove(str)) {
-      | _ => failwith("\nNumerically challenged.  Try again\n")
-        };
-      };
-
-checkExpect(
+  /* moveOfString */
+  checkExpect(
   moveOfString(
     "1", 
     {gameBoard:  [[" ", " ", " ", "O"], 
@@ -855,114 +936,11 @@ checkError(()=>moveOfString(
              stateStatus: Ongoing(P1)}),
     "\nNumerically challenged.  Try again\n");
 
+  /* stringOfPlayer */
+  checkExpect(stringOfPlayer(P1), "Player 1", "stringOfPlayer: P1");
+  checkExpect(stringOfPlayer(P2), "Player 2", "stringOfPlayer: P2");
 
-    /* estimateValue: estimates the value of a given state 
-    (static evaluation) 
-       input: cState, the current state of the game
-       output: a float associated with each state resulted from a possible move
-    */
-    let estimateValue: state => float = cState => failwith("Not implemented");
-
-
-
-    /* printing functions */
-
-        /* stringOfPlayer: prints out the string representation of the 
-           whichPlayer type
-           input: whichplayer: a player
-           output: a string that represents the player
-           */
-        let stringOfPlayer: whichPlayer => string = p =>
-          switch(p) {
-          | P1 => "Player 1"
-          | P2 => "Player 2"
-          };
-
-checkExpect(stringOfPlayer(P1), "Player 1", "stringOfPlayer: P1");
-checkExpect(stringOfPlayer(P2), "Player 2", "stringOfPlayer: P2");
-
-
-        /* stringOfState: prints out the string representation of the gameboard, 
-           based on the current state
-           input: 
-              cState: the current state of the game
-           output: 
-              the representation of the current game board and a string 
-              representing which player's turn it is, or if the game has ended
-           */
-        let stringOfState: state => string = cState => {
-          /* strLstToString: prints a visual representation of a list in the 
-             gameboard
-           input: 
-              alos: a list of string that represents a row in the game board
-           output: 
-              the string representation of a single row in the game board 
-           */
-          let rec strLstToString: list(string) => string =
-            alos =>
-              switch (alos) {
-              | [] => " |"
-              | [hd, ...tl] => " | " ++ hd ++ strLstToString(tl)
-              };
-          /* transposedGBoard: the transpose of the gameboard that will be 
-             stored in a record as the input for stringOfStateHelper
-          */    
-          let transposedGBoard = transpose(cState.gameBoard)
-          /* stringOfStateHelper: prints out the current gameboard 
-              input: cStateTwo, the current state in which the gameboard will be
-              printed out
-              output: the visual representation of the current gameboard
-          */
-          let rec stringOfStateHelper: state => string = cStateTwo =>
-            switch(cStateTwo.gameBoard) {
-            | [] => ""
-            // | [] => switch(cState.stateStatus) {
-            //   | Win(p) => "\n" ++ stringOfPlayer(p) ++ " has won the game!"
-            //   | Draw => 
-            //       "\nThere are no more moves to make.  The game is a draw."
-            //   | Ongoing(p) => 
-            //      "\n" ++ stringOfPlayer(p) ++ " please make a move..."
-            //   };
-            | [hd, ...tl] => 
-                strLstToString(hd) ++ 
-                "\n" ++ 
-                stringOfStateHelper(
-                  {gameBoard: tl, stateStatus: cState.stateStatus}
-                  )
-              };
-            stringOfStateHelper(
-              {gameBoard: transposedGBoard, stateStatus: cState.stateStatus}
-              );
-          };
-        /* recursion diagram
-            oi: {
-              gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "O"]],
-              stateStatus: Ongoing(P1)
-              }
-              ri: {
-              gameBoard: [[" ", "O", "O", "O"]],
-              stateStatus: Ongoing(P1)
-              }
-              ro: "|  | O | O | O |"
-                  "Player 1 please make a move..."
-            is: print out the string representation of hd of oi with a newline
-            oo: "|   | X | X | X |
-                 |   | O | O | O |
-                 Player 1 please make a move..."
-            oi: {
-              gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "X"]],
-              stateStatus: Ongoing(P2)}
-              ri: {
-              gameBoard: [[" ", "O", "O", "X"]],
-              stateStatus: Ongoing(P2)}
-              ro: "|   | O | O | X |
-                   Player 2 please make a move..."
-            is: print out the string representation of hd of oi with a newline
-            oo: "|   | X | X | X |
-                 |   | O | O | X |
-                 Player 2 please make a move..."
-          */
-
+  /* stringOfState */
 checkExpect(stringOfState({
               gameBoard: [[" ", "X", "X", "X"], [" ", "O", "O", "O"]],
               stateStatus: Ongoing(P1)
@@ -986,61 +964,8 @@ checkExpect(stringOfState(
 ",
                "stringOfState: test 2");
 
-        /* stringOfMove: prints out the string representation of a move
-           input: m, a move
-           output: a string representation of m, a move
-           */
-        let stringOfMove: move => string = m =>
-          switch(m) {
-          | Move(n) => string_of_int(n)
-          }
+  /* stringOfMove */
+  checkExpect(stringOfMove(Move(1)), "1", "stringOfMove: 1");
+  checkExpect(stringOfMove(Move(9)), "9", "stringOfMove: 9");
 
-checkExpect(stringOfMove(Move(1)), "1", "stringOfMove: 1");
-checkExpect(stringOfMove(Move(9)), "9", "stringOfMove: 9");
-
-};
-
-module MyGame : Game = Connect4;
-open Connect4;
-
-// /* test cases */
-
-//   /* makeCol */
-//   checkExpect(makeCol(0), [], "makeCol empty list");
-//   checkExpect(makeCol(3), [" ", " ", " "], "makeCol cons list");
-
-//   /* makeGameBoard */
-//   checkExpect(makeGameBoard(3, 0), [], "makeGameBoard test 1");
-//   checkExpect(
-//     makeGameBoard(4, 4), 
-//     [[" ", " ", " ", " "], 
-//     [" ", " ", " ", " "], 
-//     [" ", " ", " ", " "], 
-//     [" ", " ", " ", " "]], 
-//     "makeGameBoard test 2");
-
-//   /* legalMoves */
-//   checkExpect(
-//   legalMoves({gameBoard: [[" ", " ", " ", " "], 
-//                           [" ", " ", " ", " "], 
-//                           [" ", " ", " ", " "], 
-//                           [" ", " ", " ", " "]], 
-//              stateStatus: Ongoing(P1)}), 
-//              [Move(1), Move(2), Move(3), Move(4)], "legalMoves test 1");
-//   checkExpect(
-//     legalMoves({gameBoard: [["X", "O", "X"], 
-//                             ["O", "X", "O"],
-//                             [" ", "X", "O"]], 
-//                 stateStatus: Ongoing(P1)}), 
-//                 [Move(3)], "legalMoves test 2");
-//   checkExpect(
-//     legalMoves({gameBoard: [["X", "O", "X"], 
-//                             ["O", "X", "O"],
-//                             ["O", "X", "O"]], 
-//                 stateStatus: Ongoing(P2)}), 
-//                 [], "legalMoves test 3");
-
-//   /* transpose */
-
-
-//   /* diagonalLeft */
+  /* estimateValue */
