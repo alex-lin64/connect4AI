@@ -211,38 +211,41 @@ checkExpect(
         oo: [[1, 3, 5], [2, 4, 6]]
         */
       
-checkExpect(transpose([[1]]), [[1]], "1 row 1 column")
-checkExpect(transpose([[1], [2]]), [[1, 2]], "2 row 1 column")
+checkExpect(transpose([[1]]), [[1]], "transpose 1 row 1 column")
+checkExpect(transpose([[1], [2]]), [[1, 2]], "transpose 2 row 1 column")
 checkExpect(transpose([["a", "b"]]), 
                                    [["a"], ["b"]], 
-                                   "1 row 2 column")
+                                   "transpose 1 row 2 column")
 checkExpect(transpose([[1, 2], [3, 4]]),
                                   [[1, 3], [2, 4]],
-                                  "2 row 2 column")
+                                  "transpose 2 row 2 column")
 checkExpect(transpose([["o", "p", "q"], 
                                    ["r", "s", "t"], 
                                    ["u", "v", "w"]]),
                                   [["o", "r", "u"], 
                                    ["p", "s", "v"], 
                                    ["q", "t", "w"]],
-                                  "3 row 3 column")
+                                  "transpose 3 row 3 column")
       /*
-      diagonalLeft: 
+      diagonalLeft: takes in a matrix and creates a new matrix in which each 
+      inner list is indented so that the matrix has a parallelogram shape, in 
+      order to get a list of diagonals in the original matrix. 
       input:  
           gBoard: a list of list of strings that represents the game board
         output:
           a new list of list of strings that represents all the diagonals from
-          right to left of gBoard
+          upper right to lower left of gBoard
         */
 
       let rec diagonalLeft: list(list(string)) => list(list(string)) = 
         gBoard => {
-          /* input:  
+          /* diagonalHelper: cons every item of a list to the every list in
+             the list of lists, creating a new list of lists.
               input: a list of string that represents the first column in a 
                      game board
-              ro: a list of list of string of length 1, that represents the 
-                  recursive output of diagonalHelper, always 1 element longer 
-                  than ro
+              ro: a list of lists that represents the recursive output of 
+                  diagonalLeft. Every list in ro is being consed upon by every
+                  element in input.
             output:
               a list of list of strings that pairs the first of input with first
               of ro, up until the last element of ro, which is its own string 
@@ -287,7 +290,9 @@ checkExpect(diagonalLeft([["1"], ["2"], ["3"]]),
                         [["1"], ["2"], ["3"]],
                         "diagonal left: 1 row");
 
-     /* input:  
+     /* diagonalRight: creates a list of lists that represents the upper left
+        to lower right diagonals of a matrix.
+        input:  
           gBoard: a list of list of strings that represents the game board
         output:
           a new list of list of strings that represents all the diagonals from
@@ -300,7 +305,12 @@ checkExpect(diagonalLeft([["1"], ["2"], ["3"]]),
 checkExpect(diagonalRight([["1", "2", "3"], 
                           ["1", "2", "3"],
                           [" ", "2", "3"]]), 
-                        List.rev([[" "], ["1", "2"], ["1", "2", "3"], ["2", "3"], ["3"]]),
+                          List.rev(
+                            [[" "], 
+                             ["1", "2"], 
+                             ["1", "2", "3"], 
+                             ["2", "3"], 
+                             ["3"]]),
                         "diagonal right: case 1");
 checkExpect(diagonalRight([["1", "2", "3"]]), 
                         [["3"], ["2"], ["1"]],
@@ -310,16 +320,28 @@ checkExpect(diagonalRight([["1"], ["2"], ["3"]]),
                         "diagonalRight: 1 row");
     
 
-    /* input: 
-          _ => the current state of the game
+    /* fourInCol: check whether a list has 4 "X" or "O" consecutively and return
+       the current status of the game. 
+       input: 
+          cState: the current state of the game
        output:
           the status of the game
-            the status of the game
-            Win if either P1 or P2 has 4 of their pieces in a row
-            Draw, if neither player has won and there is no legal moves available
-            else, Ongoing whichever player's turn it is
+          - Win if either P1 or P2 has 4 of their pieces in a row
+          - Draw, if neither player has won and there is no legal moves 
+            available
+          - else, Ongoing whichever player's turn it is
        */
     let fourInCol: state => status = cState => {
+
+    /* fourInColHelper: takes in two cState, one for carrying over and the other
+       for recursion, producing the status of the game at cState.
+        input: 
+          o, the original cState that is carried over
+          r, the cState in which gameboard is carried over in each recursion
+        output: 
+          the status of the game in cState
+    */
+
       let rec fourInColHelper: (state, state) => status = (o, r) =>
         switch(r.gameBoard) {
         | [[a, b, c, d, ..._], ..._] 
@@ -327,7 +349,7 @@ checkExpect(diagonalRight([["1"], ["2"], ["3"]]),
         | [[a, b, c, d, ..._], ..._] 
             when ([a, b, c, d] == ["O", "O", "O", "O"]) => Win(P2)
         | [[_, b, c, d, ...col1tl], ...tl] => fourInColHelper(o,
-                  {
+                {
                 gameBoard: [[b, c, d, ...col1tl], ...tl], 
                 stateStatus: cState.stateStatus
                 })
@@ -395,8 +417,8 @@ checkExpect(
 
     /* =======================================================================*/
 
-    /* returns the status of the game at the given state */
-    /* 
+    /* gameStatus: returns the status of the game at the given state upon
+      examining 4 "X" or "O" in a row, a column, or diagonals of the gameboard. 
       input: 
         currentState: current state of the game, including gameBoard and status
       output:
@@ -427,16 +449,16 @@ checkExpect(
                               })) {
                               | Win(P1) => Win(P1)
                               | Win(P2) => Win(P2)
-                              | Ongoing(hd) => 
-                                  switch(hd) {
+                              | Draw => Draw
+                              | Ongoing(x) => 
+                                  switch(x) {
                                   | P1 => Ongoing(P1)
                                   | P2 => Ongoing(P2)
-                                    };
-                              | _ => Draw
+                                  };
                               }; 
-                            };
                           };
-                        };
+                      };
+                  };
                         
 checkExpect(
   gameStatus({gameBoard:  [[" ", " ", " ", " "], 
@@ -546,7 +568,7 @@ checkExpect(
              "gameStatus: Big board");
 
 
-    /* given a state and a legal move, yields the next state */
+    /* nextState: given a state and a legal move, yields the next state */
     /* input: 
          cState: current state of the game
          move: a num representing a legal move
@@ -556,11 +578,12 @@ checkExpect(
        */
   let nextState: (state, move) => state =
     (cState, move) => {
-      /* input: 
+      /* addPiece: add a piece on a column indicated by the current player
+         input: 
           col: a list of string that represents a column in gameboard to add a  
                piece
           p: whichPlayer, represents if it's P1 or P2's turn
-       output:
+         output:
           a new list of string that is a column of game board with the correct
           piece added
        */
@@ -589,7 +612,9 @@ checkExpect(
             oo: ["X", "X", "X", "X"]
           */
 
-    /* input: 
+    /* nextGBoard: gives a new game board given the current state and the move
+       the player chooses to make.  
+       input: 
           s: the current state of the game
           n: the column of game board to add a piece
        output:
@@ -600,10 +625,9 @@ checkExpect(
         switch(s.gameBoard, n) {
         | ([hd, ...tl], Move(1)) when (s.stateStatus == Ongoing(P1)) => 
             [addPiece(hd, P1), ...tl]
-        |([hd, ...tl], Move(1)) when (s.stateStatus == Ongoing(P2)) => 
+        | ([hd, ...tl], Move(1)) when (s.stateStatus == Ongoing(P2)) => 
             [addPiece(hd, P2), ...tl]
-        | ([hd, ...tl], Move(n)) when 
-            (s.stateStatus == Ongoing(P1)) || (s.stateStatus == Ongoing(P2)) => 
+        | ([hd, ...tl], Move(n)) => 
               [hd, ...nextGBoard(
                   {gameBoard: tl, stateStatus: s.stateStatus}, 
                   Move(n-1)
@@ -634,6 +658,9 @@ checkExpect(
           gameBoard: nextGBoard(cState, move),
           stateStatus: cState.stateStatus
           });
+        /* sStatus: the status of the game, being switched in order to change
+           player
+         */
       switch(sStatus) {
       | Ongoing(p) when (p == P1) =>
         {
@@ -788,7 +815,7 @@ checkExpect(
     "nextState: test 8"
   );  
 
-    /* for transforming human player input into
+    /* moveOfString: transforms human player input into
     internal representation of move */
     /* input:
          str: a string that is the user input for a move
@@ -829,14 +856,20 @@ checkError(()=>moveOfString(
     "\nNumerically challenged.  Try again\n");
 
 
-    /* estimates the value of a given state (static evaluation) */
+    /* estimateValue: estimates the value of a given state 
+    (static evaluation) 
+       input: cState, the current state of the game
+       output: a float associated with each state resulted from a possible move
+    */
     let estimateValue: state => float = cState => failwith("Not implemented");
 
 
 
-    /* printing functions; converts a whichPlayer type, a state type, or a move
-       type into a string */
-        /* input: whichplayer: a player
+    /* printing functions */
+
+        /* stringOfPlayer: prints out the string representation of the 
+           whichPlayer type
+           input: whichplayer: a player
            output: a string that represents the player
            */
         let stringOfPlayer: whichPlayer => string = p =>
@@ -849,14 +882,18 @@ checkExpect(stringOfPlayer(P1), "Player 1", "stringOfPlayer: P1");
 checkExpect(stringOfPlayer(P2), "Player 2", "stringOfPlayer: P2");
 
 
-        /* input: 
+        /* stringOfState: prints out the string representation of the gameboard, 
+           based on the current state
+           input: 
               cState: the current state of the game
            output: 
               the representation of the current game board and a string 
               representing which player's turn it is, or if the game has ended
            */
         let stringOfState: state => string = cState => {
-          /* input: 
+          /* strLstToString: prints a visual representation of a list in the 
+             gameboard
+           input: 
               alos: a list of string that represents a row in the game board
            output: 
               the string representation of a single row in the game board 
@@ -867,7 +904,15 @@ checkExpect(stringOfPlayer(P2), "Player 2", "stringOfPlayer: P2");
               | [] => " |"
               | [hd, ...tl] => " | " ++ hd ++ strLstToString(tl)
               };
+          /* transposedGBoard: the transpose of the gameboard that will be 
+             stored in a record as the input for stringOfStateHelper
+          */    
           let transposedGBoard = transpose(cState.gameBoard)
+          /* stringOfStateHelper: prints out the current gameboard 
+              input: cStateTwo, the current state in which the gameboard will be
+              printed out
+              output: the visual representation of the current gameboard
+          */
           let rec stringOfStateHelper: state => string = cStateTwo =>
             switch(cStateTwo.gameBoard) {
             | [] => ""
@@ -941,7 +986,8 @@ checkExpect(stringOfState(
 ",
                "stringOfState: test 2");
 
-        /* input: m, a move
+        /* stringOfMove: prints out the string representation of a move
+           input: m, a move
            output: a string representation of m, a move
            */
         let stringOfMove: move => string = m =>
@@ -998,4 +1044,3 @@ open Connect4;
 
 
 //   /* diagonalLeft */
-  
