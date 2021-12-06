@@ -14,9 +14,48 @@ module AIPlayer = (MyGame: Game) => {
              the AI player to win
      */
   let nextMove: (PlayerGame.state => PlayerGame.move) = s => {
-    let pMovesRanked: PlayerGame.state => list(PlayerGame.move) = pState => {
-      let lom = PlayerGame.legalMoves(pState)
-      let loPosStates = List.map()
+    
+    /* input:
+       output:
+       */
+    let maxF: list(float) => float = alof => {
+      let rec maxFIter: (list(float), float) => float = (alofH, n) => 
+        switch(alofH) {
+        | [] => n
+        | [hd] when (hd >= n) => hd
+        | [hd] => n
+        | [hd, ...tl] => 
+            if(hd >= List.hd(tl)) {
+              maxFIter(tl, hd)
+            } else {
+              maxFIter(tl, List.hd(tl))
+            };
+        };
+      maxFIter(alof, 0.0)
+    };
+
+    /* input:
+       output:
+       */
+    let minF: list(float) => float = alof => {
+      let rec minFIter: (list(float), float) => float = (alofH, n) => 
+        switch(alofH) {
+        | [] => n
+        | [hd] when (hd <= n) => hd
+        | [hd] => n
+        | [hd, ...tl] => 
+            if(hd <= List.hd(tl)) {
+              minFIter(tl, hd)
+            } else {
+              minFIter(tl, List.hd(tl))
+            };
+        };
+      minFIter(alof, 0.0)
+    };
+    
+    let posMoves = PlayerGame.legalMoves(s);
+    let posStates = List.map(PlayerGame.nextState, )
+
 
 
     }
