@@ -4,57 +4,67 @@ open Game;
 module AIPlayer = (MyGame: Game) => {
   module PlayerGame = MyGame
  
-  /* nextMove takes in the state of the current game, and produces the best 
-     possible move that will lead to a win for this player, implementing
-        --limited depth minimax algorithm
-        --estimateValue procedure
-        */
-  /* input: s, the current state of the game
-     output: a move that is calculated to be the best move at the state s for 
-             the AI player to win
-     */
-  let nextMove: (PlayerGame.state => PlayerGame.move) = s => {
-    
+  /* =============================== Helpers =================================*/
     /* maxF finds the largest float in a list of floats */
-    /* input: alof: a list of floats
+    /* input: alof: a non empty list of floats
        output: the largest of the floats
        */
-    let maxF: list(float) => float = alof => {
-      let rec maxFIter: (list(float), float) => float = (alofH, n) => 
-        switch(alofH) {
-        | [] => n
-        | [hd] when (hd >= n) => hd
-        | [hd] => n
-        | [hd, ...tl] => 
-            if(hd >= List.hd(tl)) {
-              maxFIter(tl, hd)
-            } else {
-              maxFIter(tl, List.hd(tl))
-            };
-        };
-      maxFIter(alof, 0.0)
-    };
+    let rec maxF: list(float) => float = alof => 
+      switch(alof) {
+      | [] => failwith("maxF: list is empty")
+      | [hd] => hd
+      | [hd, ...tl] => 
+          if(hd >= List.hd(tl)) {
+            maxF([hd, ...List.tl(tl)])
+          } else {
+            maxF(tl)
+          };
+      };
+    /* recursion diagrams
+      oi: [2.3, 66.5]
+        ri: [66.5]
+        ro: 66.5
+      is: since 2.3 is less than 66.5, return on tl of oi, return hd of tl since 
+          tl is one element long
+      oo: 66.5
+
+      oi: [66.5]
+        ri: n/a
+        ro: n/a
+      is: return hd of oi, since it is one element long
+      oo: 66.5
+      */
     
     /* minF finds the largest float in a list of floats */
     /* input: alof: a list of floats
        output: the smallest of the floats
        */
-    let minF: list(float) => float = alof => {
-      let rec minFIter: (list(float), float) => float = (alofH, n) => 
-        switch(alofH) {
-        | [] => n
-        | [hd] when (hd <= n) => hd
-        | [hd] => n
-        | [hd, ...tl] => 
-            if(hd <= List.hd(tl)) {
-              minFIter(tl, hd)
-            } else {
-              minFIter(tl, List.hd(tl))
-            };
-        };
-      minFIter(alof, 0.0)
-    };
-    
+    let rec minF: list(float) => float = alof => 
+      switch(alof) {
+      | [] => failwith("minF: list is empty")
+      | [hd] => hd
+      | [hd, ...tl] => 
+          if(hd <= List.hd(tl)) {
+            minF([hd, ...List.tl(tl)])
+          } else {
+            minF(tl)
+          };
+      };
+    /* recursion diagrams
+      oi: [2.3, 66.5]
+        ri: n/a
+        ro: n/a
+      is: since 2.3 is less than 66.5, return hd of oi
+      oo: 2.3
+
+      oi: [66.5, -2.3]
+        ri: [-2.3]
+        ro: -2.3
+      is: return ro
+      oo: -2.3
+      */
+
+
     /* bestMove finds the best move to take based on a given estimateValue of 
         each move */
     /* input: 
@@ -71,28 +81,39 @@ module AIPlayer = (MyGame: Game) => {
       (list(PlayerGame.move), list(float), float) => PlayerGame.move = 
         (alom, alof, f) =>
           switch(alom, alof) {
-          | ([hdM, ...tlM], [hdF, ...tlF]) when (f == hdF) => hdM
-          | ([hdM, ...tlM], [hdF, ...tlF]) => bestMove(tlM, tlF, f)
+          | ([hdM, ..._], [hdF, ..._]) when (f == hdF) => hdM
+          | ([_, ...tlM], [_, ...tlF]) => bestMove(tlM, tlF, f)
           | _ => failwith("The float doesn't correspond to a move")
           };
+    /* recursion diagrams
+      oi: ([Move(2), Move(3)], [2.3, 66.5], 2.3)
+        ri: n/a
+        ro: n/a
+      is: base case, since 2.3 already equals first of the list of floats
+          return hd of list of moves
+      oo: Move(2)
 
-    /* aLstOfStates converts a list of moves and a state into a list of all 
-          possible next states */
-    /* input: 
-         alom: a list of possible legal moves for a given state
-         s: the current state at any point in minimax predictions
-       output:
-         a list of possible states of the game based on a list of legal moves
-       */
-    let rec aLstOfStates: 
-      (list(PlayerGame.move), PlayerGame.state) => list(PlayerGame.state) =
-        (alom, s) =>
-          switch(alom) {
-          | [] => []
-          | [hd, ...tl] => [PlayerGame.nextState(s, hd), ...aLstOfStates(tl, s)]
-          };
+      oi: ([Move(2), Move(3)], [2.3, 66.5], 66.5)
+        ri: [Move(3), [66.5], 66.5]
+        ro: Move(3)
+      is: return ro
+      oo: Move(3)
+      */
 
-    /* foldMap creates a 'c list by applying a procedure that takes in an 'a list 
+  /* =========================================================================*/
+
+  /* nextMove takes in the state of the current game, and produces the best 
+     possible move that will lead to a win for this player, implementing
+        --limited depth minimax algorithm
+        --estimateValue procedure
+        */
+  /* input: s, the current state of the game
+     output: a move that is calculated to be the best move at the state s for 
+             the AI player to win
+     */
+  let nextMove: (PlayerGame.state => PlayerGame.move) = s => {
+    
+    /* foldMap creates a 'c list by applying a procedure that takes in a 'a list 
         and a second element 'b to produce a 'c type */
     /* input: 
          f: a procedure with type signature ('a, 'b) => 'c, that takes in a list 
@@ -108,12 +129,38 @@ module AIPlayer = (MyGame: Game) => {
          | [] => []
          | [hd, ...tl] => [f(hd, b), ...foldMap(f, tl, b)]
          };
-  
-    /* input:
+    /* recursion diagrams
+      oi: max, [Move(2), Move(3)], 1
+        ri: n/a
+        ro: n/a
+      is: run estimateValue on the list of moves
+      oo: [2.3, 4.1]
+
+      oi: max, [Move(2), Move(3)], 2
+        ri: min, List.map(legalMoves, aLstOfStates([Move(2), Move(3)], state))
+        ro: [2.3, 4.1]
+      is: return ro, result of running minF on the List.map recursive input
+      oo: [2.3, 4.1]
+      */
+
+      
+    /* aLstOfStates converts a list of moves and a state into a list of all 
+          possible next states */
+    /* input: 
+         alom: a list of possible legal moves for a given state
+         s: the current state at any point in minimax predictions
        output:
+         a list of possible states of the game based on a list of legal moves
        */
-    let minimax: PlayerGame.state => PlayerGame.move = cState => {
-      /* the minimax algorithm, estimates the value of all possible next moves 
+    let rec aLstOfStates: 
+      (list(PlayerGame.move), PlayerGame.state) => list(PlayerGame.state) =
+        (alom, s) =>
+          switch(alom) {
+          | [] => []
+          | [hd, ...tl] => [PlayerGame.nextState(s, hd), ...aLstOfStates(tl, s)]
+          };
+  
+    /* the minimax algorithm, estimates the value of all possible next moves 
           based on estimateValue
           the algorithm determines the min value, the worst for the AI, when its
             the opponents turn, and the max value, the best for the AI, when its
@@ -121,6 +168,11 @@ module AIPlayer = (MyGame: Game) => {
             (the root), where the max value is taken to decide the best move for
             the AI to make
             */
+    /* input: cState, the current state of the game
+       output: a move that is the best move determined by the minimax algorithm 
+               for the AI to win the game
+       */
+    let minimax: PlayerGame.state => PlayerGame.move = cState => {
       /* input: 
             alomMax: a list of moves that represents possible moves to make by 
                      the AI
@@ -131,25 +183,23 @@ module AIPlayer = (MyGame: Game) => {
             a float that represents the best move to make based on the minimax
             algorithm
            */
-      let rec max: (list(PlayerGame.move), int) => float = (alomMax, d) => 
+      let rec max: (list(PlayerGame.move), int) => list(float) = (alomMax, d) => 
         switch(d) {
-        | 1 => maxF(
-          List.map(PlayerGame.estimateValue, aLstOfStates(alomMax, cState))
-          )
-        | _ => maxF(
+        | 1 => 
+            List.map(PlayerGame.estimateValue, aLstOfStates(alomMax, cState)) 
+        | _ => 
+          List.map(minF,
           foldMap(
             min, 
             List.map(PlayerGame.legalMoves, aLstOfStates(alomMax, cState)), 
             (d-1)
             ))
         }
-      and min: (list(PlayerGame.move), int) => float = (alomMin, d) => 
+      and min: (list(PlayerGame.move), int) => list(float) = (alomMin, d) => 
         switch(d) {
         | 1 => 
-          minF(
             List.map(PlayerGame.estimateValue, aLstOfStates(alomMin, cState))
-            )
-        | _ => minF(
+        | _ => List.map(maxF,
           foldMap(
             max,
             List.map(PlayerGame.legalMoves, aLstOfStates(alomMin, cState)), 
@@ -157,14 +207,19 @@ module AIPlayer = (MyGame: Game) => {
             ))
         };
  
-      let posMoves = PlayerGame.legalMoves(s);
-      bestMove()
-      
+      let depth = 3;  // depth of minimax predictions
+      let posMoves = PlayerGame.legalMoves(s);  // possible moves in the game
+      let posValues = max(posMoves, depth);  // how good each move is in posMove
+      bestMove(posMoves, posValues, maxF(posValues)); 
+
       };
+
+    minimax(s)
+
     };
   
   /* put your team name here! */
-  let playerName = "";
+  let playerName = "Chad Bot";
   };
 
 module TestGame = Connect4.Connect4;
@@ -177,3 +232,27 @@ open TestAIPlayer;
 /* insert test cases for any procedures that don't take in 
  * or return a state here */
 
+  /* maxF */
+  checkExpect(maxF([1.2]), 1.2, "maxF: 1 element list");
+  checkExpect(maxF([1.2, 5.0, 1.3]), 5.0, "maxF: 3 element list");
+  checkError(()=>maxF([]), "maxF: list is empty");
+
+  /* minF */
+  checkExpect(minF([1.2]), 1.2, "minF: 1 element list");
+  checkExpect(minF([1.2, 5.0, -1.3]), -1.3, "minF: 3 element list");
+  checkError(()=>minF([]), "minF: list is empty");  
+
+  /* bestMove */
+  checkExpect(
+    bestMove([Move(2), Move(3)], [2.3, 66.5], 2.3), Move(2), "bestMove: test 1"
+    );
+  checkExpect(
+    bestMove([Move(2), Move(3)], [2.3, 66.5], 66.5), Move(3), "bestMove: test 2"
+    );
+  checkError(
+    ()=>bestMove([Move(2), Move(3)], [2.3, 66.5], 1.5), 
+    "The float doesn't correspond to a move"
+    );
+
+
+  
