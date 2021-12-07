@@ -140,7 +140,7 @@ let initialState: string => state =
             is: return ro, since first col is full
             oo: [Move(2)]
           */
-    legalMovesHelper(currentState, 1)
+      legalMovesHelper(currentState, 1)
     };
 
     /* ====================== Game Status Helpers ============================*/
@@ -249,10 +249,8 @@ let initialState: string => state =
     let fourInCol: state => status = cState => {
       let rec fourInColHelper: (state, state) => status = (o, r) =>
         switch(r.gameBoard) {
-        | [[a, b, c, d, ..._], ..._] 
-            when ([a, b, c, d] == ["X", "X", "X", "X"]) => Win(P1)
-        | [[a, b, c, d, ..._], ..._] 
-            when ([a, b, c, d] == ["O", "O", "O", "O"]) => Win(P2)
+        | [["X", "X", "X", "X", ..._], ..._] => Win(P1)
+        | [["O", "O", "O", "O", ..._], ..._] => Win(P2)
         | [[_, b, c, d, ...col1tl], ...tl] => fourInColHelper(o,
                   {
                 gameBoard: [[b, c, d, ...col1tl], ...tl], 
@@ -320,12 +318,12 @@ let initialState: string => state =
                               })) {
                               | Win(P1) => Win(P1)
                               | Win(P2) => Win(P2)
+                              | Draw => Draw
                               | Ongoing(hd) => 
                                   switch(hd) {
                                   | P1 => Ongoing(P1)
                                   | P2 => Ongoing(P2)
-                                    };
-                              | _ => Draw
+                                  };
                               }; 
                             };
                           };
@@ -459,8 +457,129 @@ let initialState: string => state =
       };
 
     /* estimates the value of a given state (static evaluation) */
-    let estimateValue: state => float = cState => failwith("Not implemented");
+    /* input: cState, the current state of the game
+       output: a float that represents how good a certain state is
+       */
+    let estimateValue: state => float = cState => {
+      /* estimates the value of a given column */
+      /* input: alos, a list of strings representing a column
+         output: a float that is how good that column is in its state for either 
+                 player
+         */
+      let rec colValue: list(string) => float =
+        alos =>
+          switch (alos) {
+          | [" ", " ", " ", " ", ...tl] => 0.0 +. colValue([" ", " ", " ", ...tl])
+          | [" ", " ", " ", "X", ...tl] => 1.0 +. colValue([" ", " ", "X", ...tl])
+          | ["X", "O", "O", "O", ...tl] => 1.0 +. colValue(["O", "O", "O", ...tl])
+          | [" ", "X", "O", "O", ...tl] => 1.0 +. colValue(["X", "O", "O", ...tl])
+          | [" ", " ", "X", "O", ...tl] => 1.0 +. colValue([" ", "X", "O", ...tl])
+          | [" ", " ", "X", "X", ...tl] => 8.0 +. colValue([" ", "X", "X", ...tl])
+          | [" ", "X", "X", "O", ...tl] => 5.0 +. colValue(["X", "X", "O", ...tl])
+          | ["X", "X", "O", "O", ...tl] => 4.0 +. colValue(["X", "O", "O", ...tl])
+          | [" ", "X", "X", "X", ...tl] => 20.0 +. colValue(["X", "X", "X", ...tl])
+          | ["X", "X", "X", "X", ..._] => 1000.0
+          | [" ", " ", " ", "O", ...tl] => -1.0 +. colValue([" ", " ", "O", ...tl])
+          | ["O", "X", "X", "X", ...tl] => -1.0 +. colValue(["X", "X", "X", ...tl])
+          | [" ", "O", "X", "X", ...tl] => -1.0 +. colValue(["O", "X", "X", ...tl])
+          | [" ", " ", "O", "X", ...tl] => -1.0 +. colValue([" ", "O", "X", ...tl])
+          | [" ", " ", "O", "O", ...tl] =>
+            (-8.0) +. colValue([" ", "O", "O", ...tl])
+          | [" ", "O", "O", "X", ...tl] =>
+            (-5.0) +. colValue(["O", "O", "X", ...tl])
+          | ["O", "O", "X", "X", ...tl] =>
+            (-4.0) +. colValue(["O", "X", "X", ...tl])
+          | [" ", "O", "O", "O", ...tl] =>
+            (-20.0) +. colValue(["O", "O", "O", ...tl])
+          | ["O", "O", "O", "O", ..._] => (-1000.0)
+          | [_, ...tl] => colValue(tl)
+          | _ => 0.0
+          };
+      
+      /* estimates the value of a given row */
+      /* input: alos, a list of strings representing a row
+         output: a float that is how good that row is in its state for either 
+                 player
+         */
+      let rec rowValue: list(string) => float =
+        alos =>
+          switch (alos) {
+          | ["X", "X", "X", "X", ..._] => 1000.0
+          | [" ", "X", "X", "X", ...tl] => 50.0 +. rowValue(["X", "X", "X", ...tl])
+          | ["X", "X", "X", " ", ...tl] => 50.0 +. rowValue(["X", "X", " ", ...tl])
+          | ["O", "X", "X", "X", ...tl] => 15.0 +. rowValue(["X", "X", "X", ...tl])
+          | ["X", "X", "X", "O", ...tl] => 15.0 +. rowValue(["X", "X", "O", ...tl])
+          | [" ", "X", "X", " ", ...tl] => 10.0 +. rowValue(["X", "X", " ", ...tl])
+          | ["X", "X", " ", " ", ...tl] => 10.0 +. rowValue(["X", " ", " ", ...tl])
+          | [" ", " ", "X", "X", ...tl] => 10.0 +. rowValue([" ", "X", "X", ...tl])
+          | ["O", "X", "X", " ", ...tl] => 5.0 +. rowValue(["X", "X", " ", ...tl])
+          | [" ", "X", "X", "O", ...tl] => 5.0 +. rowValue(["X", "X", "O", ...tl])
+          | ["X", " ", " ", " ", ...tl] => 1.0 +. rowValue([" ", " ", " ", ...tl])
+          | [" ", "X", " ", " ", ...tl] => 2.0 +. rowValue(["X", " ", " ", ...tl])
+          | [" ", " ", "X", " ", ...tl] => 2.0 +. rowValue([" ", "X", " ", ...tl])
+          | [" ", " ", " ", "X", ...tl] => 1.0 +. rowValue([" ", " ", "X", ...tl])
+          | ["O", "O", "O", "O", ..._] => (-1000.0)
+          | [" ", "O", "O", "O", ...tl] =>
+            (-50.0) +. rowValue(["O", "O", "O", ...tl])
+          | ["O", "O", "O", " ", ...tl] =>
+            (-50.0) +. rowValue(["O", "O", " ", ...tl])
+          | ["X", "O", "O", "O", ...tl] =>
+            (-15.0) +. rowValue(["O", "O", "O", ...tl])
+          | ["O", "O", "O", "X", ...tl] =>
+            (-15.0) +. rowValue(["O", "O", "X", ...tl])
+          | [" ", "O", "O", " ", ...tl] =>
+            (-10.0) +. rowValue(["O", "O", " ", ...tl])
+          | ["O", "O", " ", " ", ...tl] =>
+            (-10.0) +. rowValue(["O", " ", " ", ...tl])
+          | [" ", " ", "O", "O", ...tl] =>
+            (-10.0) +. rowValue([" ", "O", "O", ...tl])
+          | ["X", "O", "O", " ", ...tl] =>
+            (-5.0) +. rowValue(["O", "O", " ", ...tl])
+          | [" ", "O", "O", "X", ...tl] =>
+            (-5.0) +. rowValue(["O", "O", "X", ...tl])
+          | ["O", " ", " ", " ", ...tl] =>
+            (-1.0) +. rowValue([" ", " ", " ", ...tl])
+          | [" ", "O", " ", " ", ...tl] =>
+            (-2.0) +. rowValue(["O", " ", " ", ...tl])
+          | [" ", " ", "O", " ", ...tl] =>
+            (-2.0) +. rowValue([" ", "O", " ", ...tl])
+          | [" ", " ", " ", "O", ...tl] =>
+            (-1.0) +. rowValue([" ", " ", "O", ...tl])
+          | [_, ...tl] => rowValue(tl)
+          | [] => 0.0
+          };
 
+      /* sumValue applies rowValue or colValue to each row/column of the game 
+          board, and sums up the value to determine the overall value of the 
+          state of the game */
+      /* input: 
+          f, a ('a => 'b) procedure, either colValue or rowValue
+          s, the current state of the game
+         output:
+          a float that represents how good the state of a gameboard is
+         */
+      let rec sumValue: (('a => 'b), state) => float = (f, s) =>
+        switch(s.gameBoard) {
+        | [] => 0.0
+        | [hd, ...tl] => 
+            f(hd) +. sumValue(f, {gameBoard: tl, stateStatus: s.stateStatus})
+        }
+
+      sumValue(colValue, cState) +. 
+      sumValue(colValue, {
+        gameBoard: diagonalLeft(cState.gameBoard), 
+        stateStatus: cState.stateStatus
+        }) +.
+      sumValue(colValue, {
+        gameBoard: diagonalRight(cState.gameBoard), 
+        stateStatus: cState.stateStatus
+        }) +.
+      sumValue(rowValue, {
+        gameBoard: transpose(cState.gameBoard), 
+        stateStatus: cState.stateStatus
+        })
+
+      };
 
 
     /* printing functions; converts a whichPlayer type, a state type, or a move
@@ -542,8 +661,6 @@ let initialState: string => state =
                  |   | O | O | X |
                  Player 2 please make a move..."
           */
-
-
 
         /* input: m, a move
            output: a string representation of m, a move
@@ -969,3 +1086,27 @@ checkExpect(stringOfState(
   checkExpect(stringOfMove(Move(9)), "9", "stringOfMove: 9");
 
   /* estimateValue */
+  checkExpect(estimateValue(
+    {gameBoard: 
+    [[" ", " ", " ", " ", " "],
+    [" ", " ", " ", " ", " "],
+    [" ", " ", " ", " ", " "],
+    [" ", " ", " ", " ", "X"],
+    [" ", " ", " ", " ", " "],
+    [" ", " ", " ", " ", " "],
+    [" ", " ", " ", " ", " "]], 
+    stateStatus: Ongoing(P1)}),
+      8.0,
+      "estimateValue: test 1");
+  checkExpect(estimateValue(
+    {gameBoard: 
+    [[" ", " ", " ", " ", " "],
+    [" ", " ", " ", " ", " "],
+    [" ", " ", " ", " ", "O"],
+    [" ", " ", " ", "O", "X"],
+    [" ", " ", " ", " ", "O"],
+    [" ", " ", " ", " ", " "],
+    [" ", " ", " ", " ", " "]], 
+    stateStatus: Ongoing(P1)}),
+      -18.0,
+      "estimateValue: test 2");
