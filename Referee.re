@@ -18,7 +18,7 @@ module Referee =
           print_endline(CurrentGame.stringOfState(s));
           switch (CurrentGame.gameStatus(s)) {
           | CurrentGame.Win(player) =>
-            print_endline(CurrentGame.stringOfPlayer(player) ++ " wins!")
+            print_endline(CurrentGame.stringOfPlayer(player) ++ " wins!\n")
           | CurrentGame.Draw => print_endline("Draw...")
           | CurrentGame.Ongoing(player) =>
             print_endline(
@@ -32,7 +32,8 @@ module Referee =
             print_endline(
               CurrentGame.stringOfPlayer(player)
               ++ " makes the move "
-              ++ CurrentGame.stringOfMove(theMove),
+              ++ CurrentGame.stringOfMove(theMove)
+              ++ "\n"
             );
             gameLoop(CurrentGame.nextState(s, theMove));
           };
@@ -46,7 +47,7 @@ module Referee =
 };
 
 module R1 = Referee(Connect4.Connect4, 
-  (AIPlayer.AIPlayer(Connect4.Connect4)), 
+  (HumanPlayer.HumanPlayer(Connect4.Connect4)), 
   (AIPlayer.AIPlayer(Connect4.Connect4)));
 
 R1.playGame();
