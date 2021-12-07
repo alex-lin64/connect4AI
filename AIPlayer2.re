@@ -102,34 +102,21 @@ module AIPlayer = (MyGame: Game) => {
     
 
     /* foldMap creates a 'c list by applying a procedure that takes in a 'a list 
-        and a second element 'b to produce a 'c type */
+        and elements of type 'b, 'd, 'e to produce a 'c type */
     /* input: 
          f: a procedure with type signature ('a, 'b) => 'c, that takes in a list 
             of 'a and an element 'b --> that is, minimax
          aloa: a list of 'a
-         b: an element of type 'b
+         b, d, e: an element of type 'b, 'd, 'e
        output:
          a list of 'c that is result of applying f to every element within aloa
        */
-    let rec foldMap: (('a, 'b) => 'c, list('a), 'b) => list('c) = 
-      (f, aloa, b) =>
+    let rec foldMap: (('a, 'b, 'd, 'e) => 'c, list('a), 'b, 'd, 'e) => list('c) = 
+      (f, aloa, b, d, e) =>
          switch(aloa) {
          | [] => []
-         | [hd, ...tl] => [f(hd, b), ...foldMap(f, tl, b)]
+         | [hd, ...tl] => [f(hd, b, d, e), ...foldMap(f, tl, b, d, e)]
          };
-    /* recursion diagrams
-      oi: max, [Move(2), Move(3)], 1
-        ri: n/a
-        ro: n/a
-      is: run estimateValue on the list of moves
-      oo: [2.3, 4.1]
-
-      oi: max, [Move(2), Move(3)], 2
-        ri: min, List.map(legalMoves, aLstOfStates([Move(2), Move(3)], state))
-        ro: [2.3, 4.1]
-      is: return ro, result of running minF on the List.map recursive input
-      oo: [2.3, 4.1]
-      */
 
   /* =========================================================================*/
 
@@ -160,6 +147,40 @@ module AIPlayer = (MyGame: Game) => {
           | [hd, ...tl] => [PlayerGame.nextState(s, hd), ...aLstOfStates(tl, s)]
           };
   
+    /* input: 
+       output:
+       */
+    let rec pruneMax: (list(PlayerGame.move), float, float, PlayerGame.state) => float =
+        (alom, alpha, beta, s) => {
+            switch(alom) {
+            | [] => alpha
+            | [hd, ...tl] =>
+                let alphaTemp = PlayerGame.estimateValue(PlayerGame.nextState(s, hd))
+                if (beta <= alphaTemp) {
+                    beta
+                } else {
+                    pruneMax(tl, maxF([alphaTemp, alpha]), beta, s) 
+                    };
+                };
+            };
+
+    /* input: 
+       output:
+       */
+    let rec pruneMin: (list(PlayerGame.move), float, float, PlayerGame.state) => float =
+        (alom, alpha, beta, s) => {
+            switch(alom) {
+            | [] => beta
+            | [hd, ...tl] =>
+                let betaTemp = PlayerGame.estimateValue(PlayerGame.nextState(s, hd))
+                if (alpha >= betaTemp) {
+                    alpha
+                } else {
+                    pruneMin(tl, alpha, minF([betaTemp, alpha]), s) 
+                    };
+                };
+            };
+
     /* the minimax algorithm, estimates the value of all possible next moves 
           based on estimateValue
           the algorithm determines the min value, the worst for the AI, when its
@@ -172,28 +193,22 @@ module AIPlayer = (MyGame: Game) => {
        output: a move that is the best move determined by the minimax algorithm 
                for the AI to win the game
        */
-    let rec minimax: (PlayerGame.state, int, float, float) => (float, float, float) = 
+    let rec minimax: (PlayerGame.state, int, float, float) => float = 
       (cState, d, alpha, beta) => {
-        switch(PlayerGame.gameStatus(cState), PlayerGame.legalMoves(cState)) {
-        | (Ongoing(P1), [hd, ...tl]) when (d == 0) =>
-            if()
-            maxF(List.map(
-              PlayerGame.estimateValue, 
-              aLstOfStates(PlayerGame.legalMoves(cState), cState)
-              ))
-        | (Ongoing(P2), [hd, ...tl]) when (d == 0) =>
-            minF(List.map(
-              PlayerGame.estimateValue, 
-              aLstOfStates(PlayerGame.legalMoves(cState), cState)
-              ))
-        | (Ongoing(P1), [hd, ...tl]) => {
-            let (argMax, alpha1, beta1) = minimax(PlayerGame.nextState(hd, cState), (d-1), alpha, beta)
-            switch(beta1 <= alpha1) {
-            | true => beta1
-            | false => maxF(foldMap(minimax, tl, (d-1), alpha1, beta1))
+        switch(PlayerGame.gameStatus(cState)) {
+        | Ongoing(P1) when (d == 0) => 
+            pruneMax(PlayerGame.legalMoves(cState), alpha, beta, cState)
+        | Ongoing(P2) when (d == 0) =>
+            pruneMin(PlayerGame.legalMoves(cState), alpha, beta, cState)
+        | Ongoing(P1) => {
+            let alphaTemp = 
+                minimax(PlayerGame.nextState(cState, List.hd(PlayerGame.legalMoves(cState))), (d-1), alpha, beta)
+            switch(beta <= alphaTemp) {
+            | true => beta
+            | false => maxF(foldMap(minimax, (TAIL OF LIST OF NEXT STATES), (d-1), alpha, beta))
             }
         }
-        | (Ongoing(P2), [hd, ...tl]) => {
+        | Ongoing(P2) => {
             let (argMax, alpha1, beta1) = minimax(PlayerGame.nextState(hd, cState), (d-1), alpha, beta)
             switch(beta1 > alpha1) {
             | true => alpha1
