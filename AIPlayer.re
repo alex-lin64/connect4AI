@@ -99,25 +99,13 @@ module AIPlayer = (MyGame: Game) => {
       is: return ro
       oo: Move(3)
       */
-
-  /* =========================================================================*/
-
-  /* nextMove takes in the state of the current game, and produces the best 
-     possible move that will lead to a win for this player, implementing
-        --limited depth minimax algorithm
-        --estimateValue procedure
-        */
-  /* input: s, the current state of the game
-     output: a move that is calculated to be the best move at the state s for 
-             the AI player to win
-     */
-  let nextMove: (PlayerGame.state => PlayerGame.move) = s => {
     
+
     /* foldMap creates a 'c list by applying a procedure that takes in a 'a list 
         and a second element 'b to produce a 'c type */
     /* input: 
          f: a procedure with type signature ('a, 'b) => 'c, that takes in a list 
-            of 'a and an element 'b
+            of 'a and an element 'b --> that is, minimax
          aloa: a list of 'a
          b: an element of type 'b
        output:
@@ -143,7 +131,19 @@ module AIPlayer = (MyGame: Game) => {
       oo: [2.3, 4.1]
       */
 
-      
+  /* =========================================================================*/
+
+  /* nextMove takes in the state of the current game, and produces the best 
+     possible move that will lead to a win for this player, implementing
+        --limited depth minimax algorithm
+        --estimateValue procedure
+        */
+  /* input: s, the current state of the game
+     output: a move that is calculated to be the best move at the state s for 
+             the AI player to win
+     */
+  let nextMove: (PlayerGame.state => PlayerGame.move) = s => {
+    
     /* aLstOfStates converts a list of moves and a state into a list of all 
           possible next states */
     /* input: 
@@ -172,54 +172,51 @@ module AIPlayer = (MyGame: Game) => {
        output: a move that is the best move determined by the minimax algorithm 
                for the AI to win the game
        */
-    let minimax: PlayerGame.state => PlayerGame.move = cState => {
-      /* input: 
-            alomMax: a list of moves that represents possible moves to make by 
-                     the AI
-            alomMinL a list of moves that represents possible moves to make by 
-                     the opponent
-            d: the depth of the minimax algorithm
-         output:
-            a float that represents the best move to make based on the minimax
-            algorithm
-           */
-      let rec max: (list(PlayerGame.move), int) => list(float) = (alomMax, d) => 
-        switch(d) {
-        | 1 => 
-            List.map(PlayerGame.estimateValue, aLstOfStates(alomMax, cState)) 
-        | _ => 
-          List.map(minF,
-          foldMap(
-            min, 
-            List.map(PlayerGame.legalMoves, aLstOfStates(alomMax, cState)), 
-            (d-1)
-            ))
-        }
-      and min: (list(PlayerGame.move), int) => list(float) = (alomMin, d) => 
-        switch(d) {
-        | 1 => 
-            List.map(PlayerGame.estimateValue, aLstOfStates(alomMin, cState))
-        | _ => List.map(maxF,
-          foldMap(
-            max,
-            List.map(PlayerGame.legalMoves, aLstOfStates(alomMin, cState)), 
-            (d-1)
-            ))
+    let rec minimax: (PlayerGame.state, int) => float = 
+      (cState, d) => {
+        switch(PlayerGame.gameStatus(cState)) {
+        | Ongoing(P1) when (d == 0) =>
+            maxF(List.map(
+              PlayerGame.estimateValue, 
+              aLstOfStates(PlayerGame.legalMoves(cState), cState)
+              ))
+        | Ongoing(P2) when (d == 0) =>
+            minF(List.map(
+              PlayerGame.estimateValue, 
+              aLstOfStates(PlayerGame.legalMoves(cState), cState)
+              ))
+        | Ongoing(P1) => 
+            maxF(foldMap(
+                  minimax, 
+                  aLstOfStates(PlayerGame.legalMoves(cState), cState), 
+                  (d-1)
+                  )
+                )
+        | Ongoing(P2) =>
+              minF(foldMap(
+                  minimax, 
+                  aLstOfStates(PlayerGame.legalMoves(cState), cState), 
+                  (d-1)
+                  )
+                )
+        | Win(P1) => 1000.0
+        | Win(P2) => -1000.0
+        | Draw => 0.0
         };
- 
-      let depth = 3;  // depth of minimax predictions
-      let posMoves = PlayerGame.legalMoves(s);  // possible moves in the game
-      let posValues = max(posMoves, depth);  // how good each move is in posMove
-      bestMove(posMoves, posValues, maxF(posValues)); 
-
       };
 
-    minimax(s)
+      let depth = 3;  // depth of minimax predictions
+      let posMoves = PlayerGame.legalMoves(s);  // possible moves in the game
+      let argMax = minimax(s, depth);  // best float of a state according to 
+                                       // minimax
+      // estimateValue of each posMoves
+      let posValues = foldMap(minimax, aLstOfStates(posMoves, s), (depth-1))
+      bestMove(posMoves, posValues, argMax); 
 
-    };
+      };
   
   /* put your team name here! */
-  let playerName = "Chad Bot";
+  let playerName = "Chad";
   };
 
 module TestGame = Connect4.Connect4;
@@ -253,6 +250,3 @@ open TestAIPlayer;
     ()=>bestMove([Move(2), Move(3)], [2.3, 66.5], 1.5), 
     "The float doesn't correspond to a move"
     );
-
-
-  
