@@ -199,8 +199,8 @@ module AIPlayer = (MyGame: Game) => {
                   (d-1)
                   )
                 )
-        | Win(P1) => 1000.0
-        | Win(P2) => -1000.0
+        | Win(P1) => 10000.0
+        | Win(P2) => -8000.0
         | Draw => 0.0
         };
       };
